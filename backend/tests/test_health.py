@@ -10,7 +10,6 @@ def client() -> TestClient:
     return TestClient(app)
 
 
-@pytest.mark.integration
 def test_health_returns_ok(client: TestClient) -> None:
     response = client.get("/health")
 
@@ -18,7 +17,6 @@ def test_health_returns_ok(client: TestClient) -> None:
     assert response.json()["status"] == "ok"
 
 
-@pytest.mark.integration
 def test_health_reports_the_configured_environment(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -29,7 +27,6 @@ def test_health_reports_the_configured_environment(
     assert response.json()["environment"] == "homologation"
 
 
-@pytest.mark.integration
 def test_openapi_schema_is_published(client: TestClient) -> None:
     response = client.get("/openapi.json")
 
@@ -37,14 +34,12 @@ def test_openapi_schema_is_published(client: TestClient) -> None:
     assert "/health" in response.json()["paths"]
 
 
-@pytest.mark.integration
 def test_cors_allows_the_configured_origin(client: TestClient) -> None:
     response = client.get("/health", headers={"Origin": "http://localhost:5173"})
 
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
 
 
-@pytest.mark.integration
 def test_cors_does_not_allow_an_unknown_origin(client: TestClient) -> None:
     response = client.get(
         "/health", headers={"Origin": "http://nao-autorizado.example"}
@@ -53,7 +48,6 @@ def test_cors_does_not_allow_an_unknown_origin(client: TestClient) -> None:
     assert "access-control-allow-origin" not in response.headers
 
 
-@pytest.mark.integration
 def test_cors_answers_the_browser_preflight(client: TestClient) -> None:
     response = client.options(
         "/health",

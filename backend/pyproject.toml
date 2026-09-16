@@ -19,7 +19,6 @@ package = false
 pythonpath = ["."]
 markers = [
     "unit: tests an isolated function or component",
-    "integration: tests multiple application components through the HTTP interface",
 ]
 
 [dependency-groups]

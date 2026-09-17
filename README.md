@@ -58,7 +58,7 @@ volume and need to replay it, run `docker compose down -v` first — that erases
 the data.
 
 Each part has its own instructions: [backend](backend/README.md) ·
-[pipeline](pipeline/README.md)
+[frontend](frontend/README.md) · [pipeline](pipeline/README.md)
 
 ---
 

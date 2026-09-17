@@ -2,13 +2,10 @@ import { useEffect, useState } from 'react';
 import { fetchHealth } from '../api/client';
 
 function HomePage() {
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [message, setMessage] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('loading');
+  const [message, setMessage] = useState('Checking backend status...');
 
-  const checkHealth = async () => {
-    setStatus('loading');
-    setMessage('Checking backend status...');
-
+  const requestHealth = async () => {
     try {
       const data = await fetchHealth();
       setStatus('success');
@@ -16,15 +13,23 @@ function HomePage() {
     } catch (error) {
       setStatus('error');
       setMessage(
-        error instanceof Error
-          ? error.message
-          : 'Unable to reach the backend health endpoint.',
+        error instanceof Error ? error.message : 'Unable to reach the backend health endpoint.',
       );
     }
   };
 
+  const checkHealth = () => {
+    setStatus('loading');
+    setMessage('Checking backend status...');
+    requestHealth();
+  };
+
   useEffect(() => {
-    checkHealth();
+    const runInitialCheck = async () => {
+      await requestHealth();
+    };
+
+    runInitialCheck();
   }, []);
 
   return (
@@ -38,7 +43,9 @@ function HomePage() {
         {status === 'loading' ? 'Checking...' : 'Check backend'}
       </button>
 
-      <div className={`status ${status === 'error' ? 'error' : status === 'success' ? 'success' : ''}`}>
+      <div
+        className={`status ${status === 'error' ? 'error' : status === 'success' ? 'success' : ''}`}
+      >
         {status === 'idle' ? 'Waiting for validation...' : message}
       </div>
     </main>

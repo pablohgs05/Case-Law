@@ -1,44 +1,30 @@
 # Processo de testes unitários
 
-Este documento descreve exclusivamente a entrega de testes unitários do
-Case-Law e sua relação com o processo de DevOps. O escopo acompanha o estado
-atual do projeto: a aplicação possui uma configuração baseada em ambiente.
-Não foram criadas regras de negócio fictícias apenas para aumentar a
-quantidade de testes.
+## Objetivo
 
-## Objetivo e escopo
+Aplicar testes automatizados nas partes do código que possuem lógica, para
+encontrar regressões e registrar um resultado repetível antes da entrega.
 
-O alvo escolhido é `backend/app/config.py`. Esse módulo transforma a variável
-`CORS_ORIGINS` em uma lista e define valores padrão. Uma alteração incorreta
-pode impedir a comunicação do frontend com a API.
+## Unidade escolhida
 
-O foco é testar lógica de aplicação, e não infraestrutura externa como
-PostgreSQL, servidor HTTP ou navegador. Quando novas regras de negócio forem
-implementadas, elas poderão receber testes unitários próprios.
+O alvo atual é `backend/app/config.py`, especialmente a classe `Settings`.
+Ela transforma `CORS_ORIGINS` em uma lista e lê `ENVIRONMENT`. Infraestrutura
+como banco, servidor e navegador não faz parte deste escopo.
 
-## Estratégia
+## Casos testados
 
-Cada cenário segue a estrutura **Given / When / Then**:
+Os quatro cenários ficam em `backend/tests/test_config.py`:
 
-1. **Given (Dado):** prepara os valores de ambiente.
-2. **When (Quando):** cria uma instância de `Settings`.
-3. **Then (Então):** verifica o resultado esperado.
+- valor padrão de `CORS_ORIGINS`;
+- uma origem configurada;
+- várias origens separadas por vírgula;
+- leitura de `ENVIRONMENT`.
 
-Os testes de `backend/tests/test_config.py` isolam o comportamento de
-configuração e usam `monkeypatch` para simular variáveis de ambiente sem
-alterar a máquina ou um arquivo `.env` real. Como o módulo não possui
-dependências externas, não é necessário usar mocks neste momento.
+Os cenários seguem **Given / When / Then**. O `monkeypatch` simula variáveis de
+ambiente durante o teste e restaura o estado depois. Não há dependência externa
+que exija mock.
 
-## Cenários unitários
-
-- usa o frontend local quando `CORS_ORIGINS` não foi definido;
-- aceita uma única origem;
-- separa múltiplas origens por vírgula e remove espaços;
-- lê `ENVIRONMENT` do ambiente.
-
-## Como executar
-
-Na raiz do repositório:
+## Execução
 
 ```bash
 cd backend
@@ -46,56 +32,24 @@ uv sync --locked
 uv run pytest -m unit -v
 ```
 
-O resultado esperado é:
+Resultado validado: `4 passed`.
+
+## Relação com DevOps
 
 ```text
-4 passed
+Código alterado
+    ↓
+Teste unitário
+    ↓
+Resultado aprovado ou falho
+    ↓
+Correção, se necessário
+    ↓
+Código pronto para a próxima etapa
 ```
 
-Também é possível executar a suíte completa existente com `uv run pytest`, mas
-a demonstração desta entrega deve usar o marcador `unit`.
+Esta entrega fornece os testes e o comando reproduzível. CI, integração e
+cobertura por ferramenta externa não fazem parte desta etapa.
 
-## Resultado e fluxo de DevOps
-
-O resultado esperado desta entrega é **4 testes unitários aprovados**. Uma
-falha significa que o comportamento da configuração pode ter sido alterado:
-o desenvolvedor investiga o cenário, corrige o código ou o teste e executa
-novamente antes de considerar a alteração pronta.
-
-O fluxo fica:
-
-```text
-Código de configuração alterado
-        ↓
-Testes unitários locais
-        ↓
-Resultado dos testes
-        ↓
-Registro/documentação do resultado
-        ↓
-Código preparado para ser incluído futuramente no fluxo DevOps
-```
-
-Essa entrega não implementa CI. Ela fornece testes determinísticos, dependências
-declaradas, um comando reproduzível e um resultado de sucesso ou falha que
-poderá ser consumido pelo pipeline posteriormente.
-
-Cobertura é um indicador de alcance, não uma prova de qualidade perfeita. Um
-teste pode executar uma linha e ainda verificar uma expectativa fraca. Por isso,
-os cenários foram escolhidos com base no risco e no comportamento observável,
-e não apenas no percentual de linhas.
-
-## Perguntas para a apresentação
-
-- **Por que `test_config.py` é unitário?** A unidade é o comportamento de
-  conversão da configuração; o ambiente é simulado e nenhum HTTP, banco ou
-  servidor é usado.
-- **Por que usar `monkeypatch`?** Ele simula as variáveis de ambiente durante o
-  teste e restaura o estado depois, mantendo o teste isolado e repetível.
-- **Por que não usar mock?** O módulo testado não possui dependências externas.
-  Adicionar um mock sem necessidade não aumentaria a validade do teste.
-- **O que acontece se falhar?** `pytest` retorna código diferente de zero; a
-  falha deve ser registrada e corrigida antes de considerar a alteração pronta.
-- **Como isso se relaciona com DevOps?** O teste automatiza uma verificação
-  repetível de qualidade e produz um resultado que poderá ser consumido pelo
-  pipeline no futuro, sem implementar CI nesta etapa.
+Cobertura ajuda a encontrar código sem teste, mas não garante qualidade
+perfeita; os cenários também precisam verificar comportamentos importantes.

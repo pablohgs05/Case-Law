@@ -1,0 +1,12 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+
+*.tsbuildinfo
+.vite
+
+Dockerfile
+.dockerignore
+README.md

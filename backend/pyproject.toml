@@ -5,7 +5,7 @@ description = "Case Law API — consolidation and analysis of judicial precedent
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.141.1",
-    "psycopg[binary]>=3.3.5",
+    "psycopg[binary,pool]>=3.3.5",
     "pydantic-settings>=2.15.0",
     "uvicorn[standard]>=0.52.4",
 ]

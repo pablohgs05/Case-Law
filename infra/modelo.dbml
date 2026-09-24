@@ -1,0 +1,135 @@
+Project case_law {
+  database_type: 'PostgreSQL'
+  Note: 'Case Law — nucleo consultado pela API. Tabela larga para os atributos do fato; tabelas de referencia apenas para o que a fonte NAO devolve. Chaves naturais, nunca surrogate: o SQLMesh reconstroi o modelo e uuid aleatorio mudaria a cada reconstrucao.'
+}
+
+Enum core.tipo_texto {
+  ementa_completa [note: 'a fonte devolve a ementa inteira']
+  trecho [note: 'apenas fragmento — a busca encontra menos']
+  inteiro_teor [note: 'texto integral do acordao']
+}
+
+Enum core.conhecimento {
+  conhecido
+  parcialmente_conhecido
+  nao_conhecido
+  nao_identificado
+}
+
+Enum core.resultado {
+  provido
+  parcialmente_provido
+  desprovido
+  prejudicado
+  outro
+  nao_identificado
+}
+
+Enum core.deliberacao {
+  unanime
+  maioria
+  nao_informado
+}
+
+Enum core.status_fonte {
+  ativa
+  cobertura_parcial
+  indisponivel
+  inativa
+}
+
+Enum core.status_carga {
+  em_andamento
+  concluida
+  concluida_com_erros
+  falhou
+}
+
+Table core.tribunal [headerColor: #17324D] {
+  sigla text [pk, note: 'TJDFT, TJSP, STJ']
+  nome text [not null]
+  esfera text
+  uf char(2)
+  Note: 'O TJDFT devolve apenas uf = DF. A sigla canonica e o nome vem daqui.'
+}
+
+Table core.fonte [headerColor: #17324D] {
+  codigo text [pk, note: 'tjdft-jurisdf, jurisprudencias-ai']
+  nome text [not null]
+  tribunal_sigla text [note: 'nulo quando a fonte cobre varios tribunais']
+  url_base text [not null]
+  url_documento_template text [not null, note: 'detalhes/{identificador} — a fonte nao devolve link']
+  status core.status_fonte [not null, default: 'ativa']
+  cobertura_inicio date
+  cobertura_fim date
+  observacoes text
+  Note: 'Configuracao da fonte. Acrescentar uma fonte e inserir uma linha, nao editar SQL.'
+}
+
+Table core.classe_processual [headerColor: #17324D] {
+  codigo_cnj integer [pk, note: 'codigo TPU do CNJ']
+  nome text [note: 'a API devolve so o numero; o nome vem daqui']
+  Note: 'Sem esta tabela a US11 mostraria 417 ao usuario em vez de Apelacao Criminal.'
+}
+
+Table core.carga [headerColor: #9C6B30] {
+  id bigint [pk, increment]
+  fonte_codigo text [not null]
+  iniciada_em timestamptz [not null]
+  concluida_em timestamptz
+  status core.status_carga [not null, default: 'em_andamento']
+  registros_lidos integer [not null, default: 0]
+  registros_gravados integer [not null, default: 0]
+  descartados_sigilo integer [not null, default: 0]
+  parametros jsonb [note: 'periodo, pagina e filtros usados']
+  mensagem_erro text
+
+  indexes {
+    (fonte_codigo, concluida_em) [name: 'carga_ultima_idx', note: 'US5 e US8 — data da ultima atualizacao']
+  }
+  Note: 'Uma execucao de coleta. Registra quantos vieram, quantos entraram e quantos foram descartados por sigilo.'
+}
+
+Table core.decisao [headerColor: #176B55] {
+  fonte_codigo text [not null]
+  identificador_fonte text [not null, note: 'id no esquema da propria fonte']
+  tribunal_sigla text [not null]
+  processo text [note: 'numero CNJ — chave de cruzamento com o DataJud']
+  orgao_julgador text [note: 'texto: cada tribunal tem vocabulario proprio (TURMA, CAMARA, SECAO)']
+  relator text
+  classe_cnj integer
+  data_julgamento date [note: 'nem toda fonte devolve']
+  data_publicacao date [note: 'nem toda fonte devolve']
+  data_referencia date [not null, note: 'GERADA: coalesce(julgamento, publicacao). E o que filtro e ordenacao usam']
+  ementa text [not null]
+  tipo_texto core.tipo_texto [not null]
+  decisao_texto text [note: 'CONHECIDO. DESPROVIDO. UNANIME. — texto cru da fonte']
+  conhecimento core.conhecimento [note: 'extraido de decisao_texto — Sprint 2']
+  resultado core.resultado [note: 'US10 — proporcao de provimento — Sprint 2']
+  deliberacao core.deliberacao [note: 'US13 — unanime ou maioria — Sprint 2']
+  turma_recursal boolean [not null, default: false]
+  possui_inteiro_teor boolean [not null, default: false]
+  url_fonte text [not null, note: 'montada pelo template da fonte']
+  carga_id bigint [not null]
+  carregado_em timestamptz [not null]
+  ementa_busca tsvector [note: 'GERADA: to_tsvector sobre a ementa sem acento']
+
+  indexes {
+    (fonte_codigo, identificador_fonte) [pk]
+    ementa_busca [name: 'decisao_ementa_idx', note: 'GIN — US1 busca textual']
+    (data_referencia, fonte_codigo, identificador_fonte) [name: 'decisao_data_idx', note: 'US3 periodo, US6 ordenacao, US7 desempate']
+    (tribunal_sigla, data_referencia) [name: 'decisao_tribunal_idx', note: 'US3 filtro, US5 agregacao']
+    (tribunal_sigla, orgao_julgador) [name: 'decisao_orgao_idx', note: 'US18 concentracao por orgao']
+    (tribunal_sigla, relator) [name: 'decisao_relator_idx', note: 'US11 e US18']
+    processo [name: 'decisao_processo_idx', note: 'cruzamento com o DataJud']
+    classe_cnj [name: 'decisao_classe_idx', note: 'US11 filtro por classe']
+  }
+  Note: 'Um acordao. Registros em segredo de justica nao entram: sao descartados na carga, nao filtrados na consulta. orgao_julgador e relator ficam como texto porque a chave uuid (16 bytes) contra o texto (18 bytes) economiza apenas 12 por cento, e nao ha variacao de grafia a corrigir nesta fonte.'
+}
+
+Ref: core.fonte.tribunal_sigla > core.tribunal.sigla
+Ref: core.carga.fonte_codigo > core.fonte.codigo
+Ref: core.decisao.fonte_codigo > core.fonte.codigo
+Ref: core.decisao.tribunal_sigla > core.tribunal.sigla
+Ref: core.decisao.classe_cnj > core.classe_processual.codigo_cnj
+Ref: core.decisao.carga_id > core.carga.id

@@ -17,6 +17,24 @@ jobs:
       run:
         working-directory: backend
 
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: caselaw
+          POSTGRES_PASSWORD: caselaw
+          POSTGRES_DB: caselaw
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U caselaw -d caselaw"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: postgresql://caselaw:caselaw@localhost:5432/caselaw
+
     steps:
       - uses: actions/checkout@v4
 

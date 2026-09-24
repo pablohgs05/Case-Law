@@ -116,3 +116,30 @@ environment. Vite only exposes variables prefixed with `VITE_` to the browser.
 Anything in a `VITE_` variable is compiled into the bundle and readable by anyone
 who opens the site. Never put a secret there — the frontend has no private
 configuration.
+
+## Publishing
+
+The published image is the build served by nginx — not `npm run dev`, which is a
+development server and was never meant to face users.
+
+```bash
+docker build -f Dockerfile -t case-law-frontend .
+docker run --rm -p 8001:80 case-law-frontend
+```
+
+### Why one image serves both environments
+
+Vite bakes `VITE_API_URL` in at **build** time, so an absolute address would mean
+one image per environment. The Dockerfile builds with the relative `/api`
+instead: the page asks whichever host served it, and the reverse proxy in front
+sends `/` to this container and `/api` to the API.
+
+Same origin, so CORS never applies, and the image that was built for development
+is the same one production runs.
+
+### Client-side routes
+
+nginx falls back to `index.html` for any path it cannot find, so reloading the
+browser on `/resultados` works instead of answering 404. Files under `/assets/`
+are excluded from that fallback — a missing asset should fail loudly rather than
+quietly return the page.

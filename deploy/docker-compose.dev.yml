@@ -22,12 +22,21 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-caselaw}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-caselaw}
       ENVIRONMENT: development
+      ROOT_PATH: ${ROOT_PATH:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
     ports:
       - "${BACKEND_BIND:-127.0.0.1}:8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-ghcr.io/praxis-fatec/case-law-frontend:dev}
+    ports:
+      - "${FRONTEND_BIND:-127.0.0.1}:8001:80"
+    depends_on:
+      - backend
     restart: unless-stopped
 
 volumes:

@@ -9,6 +9,9 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql://postgres:postgres@localhost:5432/caselaw"
     environment: str = "development"
+    root_path: str = ""
+    database_pool_size: int = 10
+    search_max_page_size: int = 100
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:5173"]
 
     @field_validator("cors_origins", mode="before")

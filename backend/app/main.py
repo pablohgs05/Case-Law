@@ -1,15 +1,35 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import health
+from app import errors
+from app.api import decisions, health, indicators
 from app.config import settings
+from app.db import pool
 
 TAGS = [
+    {
+        "name": "search",
+        "description": "Finding decisions across the collected courts.",
+    },
+    {
+        "name": "indicators",
+        "description": "What the collection is: how recent, and how distributed.",
+    },
     {
         "name": "infrastructure",
         "description": "Operational endpoints. Not part of the product surface.",
     },
 ]
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    pool.open()
+    yield
+    pool.close()
+
 
 app = FastAPI(
     title="Case Law API",
@@ -22,6 +42,8 @@ app = FastAPI(
     ),
     version="0.1.0",
     openapi_tags=TAGS,
+    lifespan=lifespan,
+    root_path=settings.root_path,
 )
 
 app.add_middleware(
@@ -31,4 +53,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+errors.register(app)
+
 app.include_router(health.router)
+app.include_router(decisions.router)
+app.include_router(indicators.router)

@@ -1,0 +1,2 @@
+codigo,nome,tribunal_sigla,url_base,url_documento_template,status,cobertura_inicio,cobertura_fim,observacoes
+tjdft-jurisdf,TJDFT JurisDF,TJDFT,https://jurisdf.tjdft.jus.br,https://jurisdf.tjdft.jus.br/detalhes/{identificador},ativa,,,"API pública, sem credencial. Máximo de 40 documentos por página."

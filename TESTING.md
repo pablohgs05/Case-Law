@@ -8,10 +8,10 @@ desenvolvimento, antes de uma alteração ser considerada pronta para merge.
 
 ## Definição de unidade
 
-Unidade é a menor parte do código que pode ser preparada, executada e
-verificada de forma isolada. No projeto, pode ser uma função, método, classe,
-serviço, transformação ou componente com comportamento próprio. O tamanho do
-arquivo não define a unidade; o comportamento verificável define.
+Unidade é a menor parte do código que é preparada, executada e verificada de
+forma isolada. No projeto, a unidade é uma função, método, classe, serviço,
+transformação ou componente com comportamento próprio. O tamanho do arquivo
+não define a unidade; o comportamento verificável define.
 
 ## Quem define os critérios
 
@@ -21,12 +21,12 @@ da história, da regra de negócio e do risco da alteração.
 
 O resultado do planejamento é uma lista objetiva:
 
-- unidade que será coberta;
+- unidade coberta;
 - comportamento esperado;
 - cenários de sucesso;
 - entradas inválidas e limites;
 - dependências que precisam ser simuladas;
-- evidência que será exigida para aprovar a alteração.
+- evidência exigida para aprovar a alteração.
 
 O responsável pelo produto apresenta o objetivo da história. Os
 desenvolvedores transformam esse objetivo em critérios verificáveis e casos de
@@ -39,8 +39,8 @@ implementa e comprova; o revisor valida a evidência.
 
 ## Fluxo aplicado à equipe
 
-1. **Planejamento:** a equipe define as classes, funções ou componentes que
-   possuem lógica e serão cobertos.
+1. **Planejamento:** a equipe define as classes, funções ou componentes com
+   lógica e registra a cobertura exigida.
 2. **Implementação:** o desenvolvedor altera o código e cria ou atualiza os
    testes da unidade modificada.
 3. **Execução local:** o desenvolvedor executa os testes e anexa o resultado à
@@ -72,8 +72,8 @@ Os cenários seguem **Given / When / Then**:
 - **Then:** resultado esperado.
 
 Quando a unidade possui banco, API, relógio, arquivo ou outro serviço como
-dependência, a dependência é substituída por mock, fake ou simulação. O teste
-verifica a unidade, não o funcionamento da dependência substituída.
+dependência, essa dependência é substituída por mock, fake ou simulação. O
+teste verifica a unidade, não o funcionamento da dependência substituída.
 
 ## Critérios de aceitação
 

@@ -1,82 +1,62 @@
 # Processo de testes do Case-Law
 
-Este processo classifica e revisa os testes unitários e de integração usados
-pela equipe no fluxo de desenvolvimento. A classificação é definida no
-planejamento ou no início de cada sprint, junto com os critérios da história.
+Este é o processo de testes usado pela equipe no Scrum. A classificação, os
+cenários e a evidência são definidos no planejamento da história, registrados
+no início da sprint e revisados na PR.
 
-## 1. Definição de unidade e de integração
+## 1. Classificação definida pela equipe
 
-**Teste unitário** verifica uma unidade isolada: função, método, classe,
-serviço, transformação ou componente. Dependências externas, como banco,
-rede, relógio e arquivos, são substituídas por mocks, fakes ou simulações.
+**Teste unitário** verifica uma função, método, classe, serviço, transformação
+ou componente isolado. Banco, rede, relógio e arquivos são substituídos por
+mocks, fakes ou simulações.
 
 **Teste de integração** verifica a comunicação real entre partes do sistema.
-No Case-Law, os testes de integração do backend executam a API e as consultas
-contra um PostgreSQL de teste preparado com os fixtures do projeto. Eles
-confirmam o comportamento que não pode ser provado por um mock, como busca
-textual, filtros, ordenação, contratos de resposta e regras SQL.
+No Case-Law, ele executa a API e as consultas contra PostgreSQL de teste, com
+os fixtures de `backend/tests/fixtures`.
 
-O tamanho do arquivo não define a classificação. O que define é a
-dependência exercitada e o objetivo do cenário.
+O planejamento registra a classificação, os cenários de sucesso, erro e
+limite, as dependências simuladas ou reais e o resultado exigido para
+aprovação. O Product Owner apresenta o objetivo da história; os
+desenvolvedores definem os critérios; o autor implementa; outro integrante
+revisa.
 
-## 2. Quem define os critérios
-
-Na reunião de planejamento/refinamento, o responsável pelo produto apresenta o
-objetivo da história e a equipe de desenvolvimento define em conjunto:
-
-- a unidade ou integração alterada;
-- o tipo de teste: `unit` ou `integration`;
-- os cenários de sucesso, erro e limite;
-- as dependências que devem ser simuladas ou reais;
-- a evidência exigida para aprovar a alteração.
-
-O autor implementa o código e os testes. Outro integrante revisa a
-classificação, os cenários e os resultados. O responsável pelo processo
-organiza o método, mas não decide sozinho o comportamento do produto.
-
-## 3. Fluxo aplicado em cada sprint
+## 2. Fluxo Scrum aplicado
 
 ```text
-Planejamento define critério e classifica o teste
-                     ↓
-Autor implementa código e teste
-                     ↓
-Executa unitários isolados
-                     ↓
-Executa integrações com PostgreSQL, quando o critério exige
-                     ↓
-Registra comandos e resultados na PR
-                     ↓
-Revisor confere classificação, cobertura e evidência
-                     ↓
-              Critérios atendidos?
-                /              \
-              Sim               Não
-              ↓                 ↓
-        PR aprovada       PR devolvida ao autor
-              ↓                 ↓
-      segue no DevOps       autor corrige
-                                  ↓
-                         executa novamente e atualiza
-                         a evidência para nova revisão
+Planning da história
+        ↓
+Equipe registra critérios e classificação
+        ↓
+Autor desenvolve código e testes
+        ↓
+Autor executa unitários e integrações definidas
+        ↓
+Autor registra comando e resultado na PR
+        ↓
+Revisor confere critério, classificação e evidência
+        ↓
+Critérios atendidos?
+   ┌───────────────┴───────────────┐
+   │                               │
+ Sim                              Não
+   │                               │
+PR aprovada                  PR devolvida ao autor
+   │                               │
+Segue no fluxo DevOps         Autor corrige e executa
+                              novamente os testes
+                                      ↓
+                               Nova revisão da PR
 ```
 
-Se a falha foi causada pela alteração da PR, o autor corrige. Se o defeito
-pertence a uma alteração já integrada, o revisor registra o problema e ele é
-encaminhado ao autor responsável. Uma PR com teste falhando não é aprovada.
+Uma PR com teste falhando ou sem evidência é devolvida. O autor da alteração
+corrige a falha. O revisor registra a decisão e não corrige o código no lugar
+do autor.
 
-## 4. Aplicação real no repositório
+## 3. Implementação no repositório
 
 ### Backend
 
-O PyTest classifica os testes com marcadores:
-
-- `unit`: configuração, transformação de ementas, regras e endpoints isolados
-  com dependências simuladas;
-- `integration`: API e consultas que usam PostgreSQL real. Esses testes usam
-  `TEST_DATABASE_URL` e os fixtures em `backend/tests/fixtures`.
-
-Comandos usados na revisão:
+O PyTest usa os marcadores `unit` e `integration`:
 
 ```bash
 cd backend
@@ -84,79 +64,51 @@ uv run pytest -m unit -v
 uv run pytest -m integration -v
 ```
 
-O primeiro comando não precisa de banco. O segundo exige um PostgreSQL de
-teste e prepara o schema pelos fixtures. Sem `TEST_DATABASE_URL`, os testes de
-integração ficam explicitamente marcados como não executados; isso não é
-evidência de integração aprovada.
+`unit` executa configurações, transformações, regras e componentes isolados.
+`integration` executa a API e as consultas contra PostgreSQL real, usando
+`TEST_DATABASE_URL` e os fixtures do projeto. PostgreSQL é obrigatório para a
+execução de integração; testes sem essa conexão ficam marcados como não
+executados e não geram aprovação.
 
 ### Frontend
 
-Os componentes e regras de busca do React/TypeScript são executados pelo
-Vitest em ambiente `jsdom`:
+O Vitest executa os componentes e as regras de busca do React/TypeScript:
 
 ```bash
 cd frontend
 npm test
 ```
 
-Esses testes verificam componentes e regras do frontend de forma isolada. A
-classificação de integração do processo fica reservada aos cenários que
-exercitam uma dependência real do sistema, como o PostgreSQL do backend.
+## 4. Evidência exigida na PR
 
-## 5. Critério de aprovação e evidência
+O autor registra:
 
-Uma alteração é aprovada quando registra:
-
-1. critério definido no planejamento;
+1. história e critério definido no Planning;
 2. unidade ou integração coberta;
 3. motivo da classificação;
 4. cenários Given / When / Then;
 5. comando executado;
-6. resultado obtido;
+6. resultado;
 7. decisão do revisor;
-8. correção e nova execução, quando a PR foi devolvida.
+8. correção e novo resultado após devolução.
 
 Cobertura percentual é evidência complementar. Ela não substitui cenários
-relevantes nem garante, sozinha, qualidade.
+relevantes nem expectativas corretas.
 
-## 6. Relação com DevOps
+## 5. Relação com DevOps
 
-O processo entrega ao restante do DevOps testes classificados, comandos
-repetíveis e resultados verificáveis. A etapa de CI pode executar exatamente
-esses comandos e bloquear a progressão de uma alteração quando os critérios
-não forem atendidos. A implementação deste documento é o contrato de testes;
-o CI é a automação que o consome.
+O processo transforma o critério do Scrum em teste repetível e evidência de
+qualidade. A revisão da PR impede a progressão de uma alteração sem critério
+atendido. O CI executa a suíte automatizada do backend e do frontend; o
+processo define o que deve ser testado e como o resultado é aceito.
 
-## 7. Roteiro para apresentar o processo
+## 6. Fala para a apresentação
 
-Abra a história escolhida e diga:
-
-> “No planejamento, a equipe define o comportamento esperado e classifica o
-> teste. Se eu verifico uma função ou componente isolado, é unitário. Se
-> preciso da API conversando com o PostgreSQL real, é integração. Eu não
-> escolho essa classificação sozinho: ela é definida pela equipe a partir do
-> risco e das dependências da história.”
-
-Depois mostre os comandos:
-
-```bash
-cd backend
-uv run pytest -m unit -v
-uv run pytest -m integration -v
-cd ../frontend
-npm test
-```
-
-Explique a decisão:
-
-> “O teste unitário passa sem banco porque as dependências externas são
-> simuladas. O teste de integração só é considerado aprovado quando executa
-> contra um PostgreSQL de teste e os fixtures reais. No frontend, o Vitest
-> executa os componentes em `jsdom`. O resultado é registrado na PR para que
-> outro integrante revise a classificação, os cenários e a evidência.”
-
-Se a execução falhar, a PR volta ao autor, que corrige, executa novamente e
-anexa o novo resultado. Se passar e atender ao critério, o revisor aprova e a
-alteração segue para as próximas etapas do DevOps. Assim, o processo não é
-apenas uma lista de ferramentas: há decisão, execução, evidência, revisão e
-tratamento de falha.
+> “No Planning, o Product Owner apresenta a história e a equipe de
+> desenvolvimento define os critérios, os cenários e a classificação. Teste
+> unitário verifica uma unidade isolada com dependências simuladas. Teste de
+> integração verifica a API usando PostgreSQL real. O autor implementa e
+> executa os testes, registra o resultado na PR e outro integrante revisa.
+> Critério atendido aprova a PR. Falha ou ausência de evidência devolve a PR ao
+> autor, que corrige, executa novamente e envia para nova revisão. Esse é o
+> ponto em que o processo Scrum entrega uma alteração validada ao fluxo DevOps.”

@@ -1,2 +1,3 @@
 codigo,nome,tribunal_sigla,url_base,url_documento_template,status,cobertura_inicio,cobertura_fim,observacoes
-tjdft-jurisdf,TJDFT JurisDF,TJDFT,https://jurisdf.tjdft.jus.br,https://jurisdf.tjdft.jus.br/detalhes/{identificador},ativa,,,"API pública, sem credencial. Máximo de 40 documentos por página."
+tjdft-jurisdf,TJDFT JurisDF,TJDFT,https://jurisdf.tjdft.jus.br,https://jurisdf.tjdft.jus.br/acordaos/{documento},ativa,,,"API pública, sem credencial. Máximo de 40 documentos por página."
+stj-espelhos,STJ Espelhos de Acórdãos,STJ,https://scon.stj.jus.br,https://processo.stj.jus.br/processo/revista/documento/mediado/?componente=ITA&sequencial={documento},ativa,,,"Dados abertos do STJ, licença CC-BY. Jurisprudência selecionada pela Secretaria de Jurisprudência, não a base inteira. Arquivos mensais no CKAN."

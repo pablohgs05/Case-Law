@@ -17,5 +17,7 @@
     "jsx": "react-jsx"
   },
   "include": ["src"],
-  "exclude": ["src/**/*.test.*"]
+  // Tests are type checked too. A test with a type error is a test that may
+  // not be checking what it says it checks.
+  "exclude": []
 }

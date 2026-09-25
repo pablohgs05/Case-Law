@@ -12,7 +12,15 @@ from typing import Any
 
 import psycopg2
 
-from sources.tjdft import REQUEST_INTERVAL, _Pacer, document_exists
+from datetime import date
+
+from sources.tjdft import (
+    REQUEST_INTERVAL,
+    _Pacer,
+    _windows,
+    document_exists,
+    identifiers_between,
+)
 
 SCHEMA = "verificacao"
 TABLE = f"{SCHEMA}.link"
@@ -46,6 +54,18 @@ SET valido = EXCLUDED.valido, verificado_em = EXCLUDED.verificado_em
 # Stops a run that is only producing failures: a portal that is down would
 # otherwise be asked once per remaining record.
 MAX_CONSECUTIVE_FAILURES = 10
+
+SPAN = """
+SELECT MIN(data_julgamento) AS first, MAX(data_julgamento) AS last
+FROM core.decisao
+WHERE data_julgamento IS NOT NULL
+"""
+
+IN_WINDOW = """
+SELECT identificador_fonte
+FROM core.decisao
+WHERE data_julgamento BETWEEN %(first)s AND %(last)s
+"""
 
 
 def _connection() -> Any:
@@ -108,9 +128,73 @@ def verify() -> int:
     return invalid
 
 
+def sweep() -> int:
+    """
+    The same answer as `verify`, in a fraction of the requests.
+
+    Reading a window costs one request per forty documents, so the collection
+    is listed for about 2.700 requests instead of 107.828. What the listing
+    does not carry is a candidate, not a verdict: a corrected judgement date
+    moves a record out of the window it was collected in, so each absence is
+    confirmed one by one before being written down as broken.
+    """
+    pacer = _Pacer(_interval())
+    checked = invalid = 0
+
+    with _connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(CREATE)
+            cursor.execute(SPAN)
+            span = cursor.fetchone()
+
+        if span is None or span[0] is None:
+            print("nothing loaded", flush=True)
+            return 0
+
+        first, last = span
+        janelas = list(_windows(first, last, "month"))
+        print(f"{first} to {last}, {len(janelas)} windows", flush=True)
+
+        for inicio, fim in janelas:
+            listed = identifiers_between(inicio, fim, _interval())
+
+            with connection.cursor() as cursor:
+                cursor.execute(IN_WINDOW, {"first": inicio, "last": fim})
+                ours = [row[0] for row in cursor.fetchall()]
+
+            missing = [i for i in ours if i not in listed]
+            print(
+                f"  {inicio:%Y-%m}  listed {len(listed):>5}  ours {len(ours):>5}"
+                f"  to confirm {len(missing)}",
+                flush=True,
+            )
+
+            for identificador in ours:
+                if identificador in listed:
+                    valido = True
+                else:
+                    pacer.wait()
+                    try:
+                        valido = document_exists(identificador)
+                    except Exception:  # noqa: BLE001
+                        continue
+
+                checked += 1
+                invalid += not valido
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        RECORD, {"identificador": identificador, "valido": valido}
+                    )
+            connection.commit()
+
+    print(f"verified {checked}, invalid {invalid}", flush=True)
+    return invalid
+
+
 def main() -> None:
+    modo = sys.argv[1] if len(sys.argv) > 1 else "sweep"
     try:
-        verify()
+        sweep() if modo == "sweep" else verify()
     except KeyboardInterrupt:
         print("\ninterrupted — what was verified is already recorded", flush=True)
         sys.exit(130)

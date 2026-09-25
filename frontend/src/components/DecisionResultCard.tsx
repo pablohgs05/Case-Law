@@ -1,6 +1,15 @@
 import { Fragment, type ReactNode } from 'react';
+import { Link, type To } from 'react-router-dom';
+import { ArrowRight } from '@phosphor-icons/react';
 
 import type { SearchDecisionMatch } from '../api/search';
+import {
+  formatDate,
+  getDisplayValue,
+  NOT_INFORMED,
+  normalizeOfficialUrl,
+  normalizeText,
+} from './decisionFormat';
 
 type DecisionCardData = Pick<
   SearchDecisionMatch,
@@ -18,39 +27,18 @@ type DecisionCardData = Pick<
 
 type DecisionResultCardProps = {
   decision: DecisionCardData;
+  // The address of the decision in full. Without it the card only links to
+  // the court.
+  to?: To;
+  // How following it changes the history, as a router link takes them.
+  replace?: boolean;
+  state?: unknown;
+  // Called as the card is followed, for what the address alone does not do.
+  onOpen?: () => void;
+  openButtonId?: string;
+  // The decision open in the detail panel, marked so the list says which.
+  selected?: boolean;
 };
-
-function normalizeText(value: string | null | undefined): string {
-  if (typeof value !== 'string') {
-    return '';
-  }
-
-  return value.trim();
-}
-
-function getDisplayValue(value: string | null | undefined): string {
-  const normalized = normalizeText(value);
-  return normalized || 'Não informado';
-}
-
-function normalizeOfficialUrl(value: string | null | undefined): string | null {
-  const normalized = normalizeText(value);
-
-  if (!normalized) {
-    return null;
-  }
-
-  try {
-    const parsedUrl = new URL(normalized);
-    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-      return null;
-    }
-
-    return normalized;
-  } catch {
-    return null;
-  }
-}
 
 function renderSafeSnippet(value: string | null | undefined): ReactNode[] {
   const normalized = normalizeText(value);
@@ -101,36 +89,15 @@ function renderSafeSnippet(value: string | null | undefined): ReactNode[] {
   return renderedNodes.length > 0 ? renderedNodes : ['Trecho indisponível.'];
 }
 
-function formatDate(value: string | null | undefined): string | null {
-  const normalized = normalizeText(value);
-
-  if (!normalized) {
-    return null;
-  }
-
-  const isoDateMatch = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-
-  if (isoDateMatch) {
-    const [, year, month, day] = isoDateMatch;
-    const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
-
-    if (Number.isNaN(date.getTime())) {
-      return null;
-    }
-
-    return date.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-  }
-
-  const parsedDate = new Date(normalized);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return null;
-  }
-
-  return parsedDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-}
-
-function DecisionResultCard({ decision }: DecisionResultCardProps) {
+function DecisionResultCard({
+  decision,
+  to,
+  replace,
+  state,
+  onOpen,
+  openButtonId,
+  selected = false,
+}: DecisionResultCardProps) {
   const officialUrl = normalizeOfficialUrl(decision.source_url);
   const linkIsUnavailable = !officialUrl || decision.source_url_reachable === false;
 
@@ -140,20 +107,44 @@ function DecisionResultCard({ decision }: DecisionResultCardProps) {
     { label: 'Relator', value: getDisplayValue(decision.reporting_judge) },
     {
       label: 'Data de julgamento',
-      value: formatDate(decision.decided_on) ?? 'Não informado',
+      value: formatDate(decision.decided_on) ?? NOT_INFORMED,
     },
     {
       label: 'Data de publicação',
-      value: formatDate(decision.published_on) ?? 'Não informado',
+      value: formatDate(decision.published_on) ?? NOT_INFORMED,
     },
   ];
 
   return (
     <article
-      className="decision-result-card"
+      className={
+        selected ? 'decision-result-card decision-result-card--selected' : 'decision-result-card'
+      }
       aria-label={`Decisão ${decision.case_number ?? 'sem processo'}`}
     >
+      {/* The whole card opens the decision, as in the reference. A real link
+          stretched over the card, to the decision's own address: it can be
+          opened in another tab or copied. The official link is a sibling, not
+          a child, and sits above it, so it never opens this one as well. */}
+      {to && (
+        <Link
+          to={to}
+          replace={replace}
+          state={state}
+          id={openButtonId}
+          className="decision-result-card__select"
+          onClick={onOpen}
+          aria-current={selected ? 'true' : undefined}
+        >
+          <span className="sr-only">
+            Ler a decisão
+            {normalizeText(decision.case_number) ? ` do processo ${decision.case_number}` : ''}
+          </span>
+        </Link>
+      )}
+
       <header className="decision-result-card__header">
+        {to && <ArrowRight className="decision-result-card__arrow" size={16} aria-hidden="true" />}
         <div className="decision-result-card__title">
           <span className="decision-result-card__court">{getDisplayValue(decision.court)}</span>
           <span className="decision-result-card__separator">•</span>
@@ -199,7 +190,7 @@ function DecisionResultCard({ decision }: DecisionResultCardProps) {
 
       <dl className="decision-result-card__meta">
         {metadata
-          .filter((item) => item.value !== 'Não informado')
+          .filter((item) => item.value !== NOT_INFORMED)
           .map((item) => (
             <div className="decision-result-card__meta-item" key={item.label}>
               <dt>{item.label}</dt>

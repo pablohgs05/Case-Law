@@ -241,6 +241,245 @@ input:focus-visible {
   cursor: not-allowed;
 }
 
+.filter-button[aria-expanded='true'] {
+  border-color: var(--search-primary);
+  background: #f7e8e2;
+}
+
+.search-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.search-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1rem 1.1rem 1.1rem;
+  border: 1px solid var(--search-border);
+  border-radius: 15px;
+  background: var(--search-surface);
+  box-shadow: 0 4px 18px rgb(45 19 27 / 5%);
+}
+
+/* `display: flex` would otherwise win over the attribute and keep it open. */
+.search-filters[hidden] {
+  display: none;
+}
+
+.search-filters__group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.search-filters__legend {
+  padding: 0;
+  margin-bottom: 0.6rem;
+  color: var(--search-text);
+  font:
+    700 12px/1.3 'Source Sans 3',
+    sans-serif;
+}
+
+/* The judgement and the publication period side by side, stacked when narrow. */
+.date-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.1rem;
+}
+
+.date-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0.35rem 0.75rem 0.75rem;
+  border: 1px solid #eadbd6;
+  border-radius: 10px;
+  background: #fcf6f3;
+}
+
+.date-group__legend {
+  padding: 0 0.3rem;
+  color: var(--search-text);
+  font:
+    700 12px/1.3 'Source Sans 3',
+    sans-serif;
+}
+
+.date-group--invalid {
+  border-color: #b3261e;
+}
+
+.date-group--invalid .date-field input {
+  border-color: #b3261e;
+}
+
+.date-group__error {
+  margin: 0.55rem 0 0;
+  color: #9f1f18;
+  font:
+    700 12px/1.4 'Source Sans 3',
+    sans-serif;
+}
+
+/* Not colour alone: the message is text, and it opens with a mark. */
+.date-group__error::before {
+  content: '⚠ ';
+}
+
+.filters-pending {
+  margin: 0;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid #eadbd6;
+  border-radius: 10px;
+  background: #fcf6f3;
+  color: var(--search-primary);
+  font:
+    600 13px/1.4 'Source Sans 3',
+    sans-serif;
+}
+
+.date-group__note {
+  margin: 0.55rem 0 0;
+  color: var(--search-muted);
+  font:
+    500 11px/1.4 'Source Sans 3',
+    sans-serif;
+}
+
+.filter-state {
+  margin: 0;
+  color: var(--search-muted);
+  font:
+    500 13px/1.5 'Source Sans 3',
+    sans-serif;
+}
+
+.filter-state--error {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #e7d1ce;
+  border-radius: 12px;
+  background: #fff8f6;
+  color: var(--search-text);
+}
+
+.filter-state--error p {
+  margin: 0;
+}
+
+.court-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.court-option {
+  position: relative;
+}
+
+/* Out of sight but still focusable and still the thing a screen reader reads. */
+.court-option__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+}
+
+.court-option__body {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 11px;
+  border: 1px solid #eadbd6;
+  border-radius: 8px;
+  background: var(--search-surface);
+  color: var(--search-muted);
+  font:
+    700 12px/1 'Source Sans 3',
+    sans-serif;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
+}
+
+.court-option__body:hover {
+  border-color: var(--search-primary);
+  color: var(--search-primary);
+}
+
+.court-option__check {
+  display: none;
+}
+
+/* Selected reads without colour too: the check mark appears. */
+.court-option__input:checked + .court-option__body {
+  border-color: #e3c9c1;
+  background: var(--search-soft);
+  color: var(--search-primary);
+}
+
+.court-option__input:checked + .court-option__body .court-option__check {
+  display: inline-block;
+}
+
+.court-option__input:focus-visible + .court-option__body {
+  outline: 3px solid rgb(69 21 31 / 20%);
+  outline-offset: 2px;
+}
+
+.court-option__input:disabled + .court-option__body,
+.date-field input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.date-range {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.35rem;
+}
+
+.date-field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.date-field label {
+  color: var(--search-text);
+  font:
+    700 11px/1.3 'Source Sans 3',
+    sans-serif;
+}
+
+.date-field input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 0 0.65rem;
+  border: 1px solid var(--search-border);
+  border-radius: 8px;
+  background: var(--search-surface);
+  color: var(--search-text);
+  font:
+    600 13px/1 'Source Sans 3',
+    sans-serif;
+}
+
 .search-results {
   width: min(100%, 1200px);
   display: flex;
@@ -257,6 +496,75 @@ input:focus-visible {
   font:
     600 15px/1.4 'Source Sans 3',
     sans-serif;
+}
+
+/* The total and the order, side by side above the list. */
+.results-toolbar {
+  width: min(100%, 1200px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.results-toolbar .search-summary {
+  min-height: 2.5rem;
+}
+
+.results-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.results-sort__label {
+  color: var(--search-muted);
+  font:
+    600 13px/1.2 'Source Sans 3',
+    sans-serif;
+  white-space: nowrap;
+}
+
+.results-sort__select {
+  min-width: 11rem;
+  height: 38px;
+  padding: 0 2.2rem 0 0.8rem;
+  border: 1px solid var(--search-border);
+  border-radius: 10px;
+  background: var(--search-surface);
+  color: var(--search-primary);
+  font:
+    700 14px/1 'Source Sans 3',
+    sans-serif;
+  cursor: pointer;
+}
+
+.results-sort__select:hover:not(:disabled) {
+  border-color: #cdb5ae;
+}
+
+.results-sort__select:focus-visible {
+  outline: 3px solid rgb(69 21 31 / 20%);
+  outline-offset: 2px;
+  border-color: var(--search-primary);
+}
+
+.results-sort__select:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 560px) {
+  .results-sort {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .results-sort__select {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 .search-summary strong {
@@ -447,6 +755,382 @@ input:focus-visible {
     sans-serif;
 }
 
+/* A card that chooses a decision: a button stretched over the whole card. */
+.decision-result-card:has(.decision-result-card__select) {
+  position: relative;
+  cursor: pointer;
+}
+
+.decision-result-card__select {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.decision-result-card__select:focus-visible {
+  outline: 3px solid rgb(69 21 31 / 25%);
+  outline-offset: -3px;
+}
+
+/* The official link stays its own target, above the stretched button. Only the
+   link itself: the empty rest of its row still chooses the card. */
+.decision-result-card:has(.decision-result-card__select) .decision-result-card__source-link {
+  position: relative;
+  z-index: 2;
+}
+
+.decision-result-card:has(.decision-result-card__select) .decision-result-card__header {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.decision-result-card__arrow {
+  flex: none;
+  color: var(--search-muted);
+  transition: transform 160ms ease;
+}
+
+.decision-result-card:has(.decision-result-card__select):hover {
+  border-color: #cdb5ae;
+}
+
+.decision-result-card:has(.decision-result-card__select):hover .decision-result-card__arrow {
+  color: var(--search-primary);
+  transform: translateX(2px);
+}
+
+/* The decision on the right, marked as in the reference: soft ground, and an
+   arrow and border that say it without relying on the ground alone. */
+.decision-result-card--selected {
+  border-color: var(--search-primary);
+  background: #fdf3ef;
+}
+
+.decision-result-card--selected .decision-result-card__header {
+  background: #f8e6df;
+}
+
+.decision-result-card--selected .decision-result-card__arrow {
+  color: var(--search-primary);
+}
+
+/* Always two columns, as in the reference: the list, and the decision chosen
+   from it. Choosing another only changes the right side. */
+.results-layout {
+  width: min(100%, 1200px);
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.results-layout .search-results {
+  width: 100%;
+}
+
+/* The left column: the total and the order above the list they describe. */
+.results-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* In the narrower left column, a card lays its fields out in two columns. */
+.results-layout .decision-result-card__meta {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.decision-detail--empty {
+  min-height: 12rem;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.decision-detail__placeholder {
+  max-width: 32ch;
+  margin: 0;
+  color: var(--search-muted);
+  font:
+    500 15px/1.5 'Source Sans 3',
+    sans-serif;
+}
+
+.decision-detail {
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1rem 1.25rem 1.5rem;
+  border: 1px solid var(--search-border);
+  border-radius: 15px;
+  background: var(--search-surface);
+  box-shadow: 0 4px 18px rgb(45 19 27 / 5%);
+}
+
+/* Shown whenever a decision has its own address to go back from. */
+.decision-detail__toolbar {
+  display: flex;
+}
+
+.decision-detail__back {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 0.75rem;
+  border: 1px solid #eadbd6;
+  border-radius: 9px;
+  background: #fcf6f3;
+  color: var(--search-primary);
+  font:
+    700 13px/1 'Source Sans 3',
+    sans-serif;
+  cursor: pointer;
+}
+
+.decision-detail__back:hover {
+  background: #f7e8e2;
+}
+
+.decision-detail__header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.decision-detail__court {
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  background: var(--search-soft);
+  color: var(--search-primary);
+  font:
+    700 11px/1.2 'Source Sans 3',
+    sans-serif;
+  letter-spacing: 0.03em;
+}
+
+.decision-detail__title {
+  margin: 0;
+  color: var(--search-text);
+  font:
+    700 22px/1.25 'Source Sans 3',
+    sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.decision-detail__title:focus-visible {
+  outline: 3px solid rgb(69 21 31 / 20%);
+  outline-offset: 3px;
+}
+
+.decision-detail__state-title {
+  margin: 0;
+  font:
+    700 16px/1.3 'Source Sans 3',
+    sans-serif;
+}
+
+.decision-detail .search-state p {
+  margin: 0;
+}
+
+.decision-detail__meta {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 0.9rem 1.25rem;
+  border-radius: 12px;
+  background: #fbf8f5;
+}
+
+.decision-detail__meta-item {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  overflow-wrap: anywhere;
+}
+
+.decision-detail__meta-item dt {
+  color: var(--search-muted);
+  font:
+    600 12px/1.3 'Source Sans 3',
+    sans-serif;
+}
+
+.decision-detail__meta-item dd {
+  margin: 0;
+  color: var(--search-text);
+  font:
+    700 14px/1.4 'Source Sans 3',
+    sans-serif;
+}
+
+/* Long ementas read best at 65 to 80 characters a line. `ch` is the width of a
+   zero, wider than the average letter of this face: 72ch measured 85 characters
+   on a real ementa, 62ch comes to about 73. The panel scrolls as a whole, the
+   height of the window, so the text is never boxed into a short inner area. */
+.decision-detail__reading {
+  max-width: 62ch;
+  font-size: 17px;
+}
+
+.decision-detail__section-title {
+  margin: 0 0 0.8rem;
+  color: var(--search-text);
+  font:
+    700 16px/1.3 'Source Sans 3',
+    sans-serif;
+}
+
+/* The court's own text. Its line breaks are kept, and a long unbroken run —
+   a URL, a case number — wraps instead of pushing the panel sideways. */
+.decision-detail__text {
+  margin: 0;
+  color: var(--search-text);
+  font:
+    400 17px/1.65 'Source Sans 3',
+    sans-serif;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* The keyword block every structured ementa opens with, before the sections. */
+.decision-detail__headnote {
+  margin: 0 0 1.4rem;
+  padding-left: 0.9rem;
+  border-left: 3px solid #e3c9c1;
+  color: var(--search-text);
+  font:
+    500 17px/1.6 'Source Sans 3',
+    sans-serif;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.decision-detail__part + .decision-detail__part {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--search-border);
+}
+
+.decision-detail__part-title {
+  margin: 0 0 0.45rem;
+  color: var(--search-primary);
+  font:
+    700 13px/1.3 'Source Sans 3',
+    sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.decision-detail__missing {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border: 1px dashed var(--search-border);
+  border-radius: 12px;
+  color: var(--search-muted);
+  font:
+    500 15px/1.5 'Source Sans 3',
+    sans-serif;
+}
+
+/* The court's page, set apart: it prevails over anything this screen shows. */
+.official-source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #eadbd6;
+  border-radius: 12px;
+  background: #fcf6f3;
+}
+
+.official-source__text {
+  min-width: 0;
+  flex: 1 1 16rem;
+}
+
+.official-source__title {
+  margin: 0 0 0.2rem;
+  color: var(--search-text);
+  font:
+    700 15px/1.35 'Source Sans 3',
+    sans-serif;
+}
+
+.official-source__detail {
+  margin: 0;
+  color: var(--search-muted);
+  font:
+    500 13px/1.4 'Source Sans 3',
+    sans-serif;
+}
+
+.official-source__action {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 1rem;
+  border: 1px solid var(--search-primary);
+  border-radius: 10px;
+  background: var(--search-primary);
+  color: #ffffff;
+  font:
+    700 13px/1 'Source Sans 3',
+    sans-serif;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.official-source__action:hover {
+  border-color: var(--search-primary-hover);
+  background: var(--search-primary-hover);
+}
+
+.official-source__action:focus-visible {
+  outline: 3px solid rgb(69 21 31 / 25%);
+  outline-offset: 2px;
+}
+
+.official-source__action--disabled {
+  border-color: var(--search-border);
+  background: #f1ebe8;
+  color: var(--search-muted);
+  cursor: not-allowed;
+}
+
+/* Too narrow for two columns: the decision goes under the list. */
+@media (max-width: 1100px) {
+  .results-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .decision-detail {
+    position: static;
+    max-height: none;
+  }
+}
+
 @media (max-width: 900px) {
   .decision-result-card__meta {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -508,6 +1192,22 @@ input:focus-visible {
 
   .search-button {
     min-width: 110px;
+  }
+}
+
+@media (max-width: 760px) {
+  .date-groups {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .search-filters {
+    padding: 0.9rem 0.85rem;
+  }
+
+  .date-range {
+    grid-template-columns: 1fr;
   }
 }
 

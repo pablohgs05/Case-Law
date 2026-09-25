@@ -3,13 +3,23 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from psycopg import DataError, OperationalError
-from psycopg.errors import UndefinedObject, UndefinedTable
+from psycopg.errors import UndefinedColumn, UndefinedObject, UndefinedTable
 from psycopg_pool import PoolTimeout
 from pydantic import BaseModel, Field
 
 NOT_PUBLISHED = (
     "The decisions have not been published to this environment yet. "
     "Nothing is wrong with your request."
+)
+
+# A column the code reads and the published data does not have. It means the
+# same thing as a missing table — this environment is serving an older
+# publication than the code expects — and it is answered the same way, because
+# the caller can do nothing about either.
+OUT_OF_DATE = (
+    "This environment is serving a publication older than the API that reads "
+    "it. Nothing is wrong with your request: the data has to be published "
+    "again."
 )
 
 UNAVAILABLE = "The database is not answering right now. Try again in a moment."
@@ -92,6 +102,12 @@ def register(app: FastAPI) -> None:
     @app.exception_handler(UndefinedObject)
     async def _missing_dataset(_: Request, __: Exception) -> JSONResponse:
         return _unavailable(NOT_PUBLISHED)
+
+    # UndefinedColumn is a sibling of the two above, not a subclass, so it
+    # escaped them and reached the client as a bare 500.
+    @app.exception_handler(UndefinedColumn)
+    async def _stale_publication(_: Request, __: Exception) -> JSONResponse:
+        return _unavailable(OUT_OF_DATE)
 
     @app.exception_handler(OperationalError)
     @app.exception_handler(PoolTimeout)

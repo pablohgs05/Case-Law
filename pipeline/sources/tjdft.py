@@ -121,6 +121,37 @@ def total_available(
     return int(response.json()["hits"]["value"])
 
 
+def identifiers_between(
+    start: date,
+    end: date,
+    interval: float = REQUEST_INTERVAL,
+) -> set[str]:
+    """
+    Every identifier the source holds for a window, read page by page.
+
+    One request per forty documents instead of one per document. Absence here
+    is a candidate for a broken link, not a verdict: a court that corrected a
+    judgement date moves a record out of the window it was collected in, so the
+    caller confirms each absence with `document_exists`.
+    """
+    pacer = _Pacer(interval)
+    terms = _search_terms(start, end)
+    found: set[str] = set()
+    page = 0
+
+    while True:
+        pacer.wait()
+        response = requests.post(
+            SEARCH_URL, json=_payload(terms, page, ""), timeout=REQUEST_TIMEOUT
+        )
+        response.raise_for_status()
+        records = response.json().get("registros") or []
+        if not records:
+            return found
+        found |= {str(r.get("identificador")) for r in records}
+        page += 1
+
+
 def document_exists(identificador: str) -> bool:
     """
     Whether the source still holds this document.

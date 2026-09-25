@@ -29,6 +29,7 @@ data/raw/
 data/processed/
 
 # Editors and OS
+.claude/
 .vscode/
 .idea/
 *.swp

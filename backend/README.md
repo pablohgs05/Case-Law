@@ -68,6 +68,7 @@ Producing one, from the repository root on the machine that has the data:
 docker compose exec -T postgres psql -U postgres -d caselaw \
   -c "DROP SCHEMA IF EXISTS amostra CASCADE" \
   -c "CREATE SCHEMA amostra" \
+  -c "CREATE TABLE amostra.tribunal AS SELECT * FROM core.tribunal" \
   -c "CREATE TABLE amostra.fonte AS SELECT * FROM core.fonte" \
   -c "CREATE TABLE amostra.decisao AS SELECT * FROM core.decisao ORDER BY random() LIMIT 2000"
 

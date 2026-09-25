@@ -41,9 +41,23 @@ CREATE TABLE core.fonte (
     url_documento_template TEXT NOT NULL
 );
 
-INSERT INTO core.fonte VALUES (
-    'tjdft-jurisdf', 'TJDFT JurisDF', 'TJDFT',
-    'https://jurisdf.tjdft.jus.br/detalhes/{identificador}'
+INSERT INTO core.fonte VALUES
+('tjdft-jurisdf', 'TJDFT JurisDF', 'TJDFT',
+ 'https://jurisdf.tjdft.jus.br/acordaos/{documento}'),
+('stj-espelhos', 'STJ Espelhos de Acórdãos', 'STJ',
+ 'https://processo.stj.jus.br/processo/revista/documento/mediado/?componente=ITA&sequencial={documento}');
+
+-- The same row as pipeline/transformations/seeds/tribunal.csv.
+CREATE TABLE core.tribunal (
+    sigla  TEXT NOT NULL PRIMARY KEY,
+    nome   TEXT NOT NULL,
+    esfera TEXT,
+    uf     TEXT
+);
+
+INSERT INTO core.tribunal VALUES (
+    'TJDFT', 'Tribunal de Justiça do Distrito Federal e dos Territórios',
+    'distrital', 'DF'
 );
 
 -- Written by the pipeline's link check, read by the core model.

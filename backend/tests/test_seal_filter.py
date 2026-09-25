@@ -43,8 +43,12 @@ def transformed(db: psycopg.Connection[DictRow]) -> psycopg.Connection[DictRow]:
 
 
 def identifiers(db: psycopg.Connection[DictRow]) -> set[str]:
+    """Only the TJDFT's: the seal flag is a field of its collection."""
     with db.cursor() as cursor:
-        cursor.execute("SELECT identificador_fonte FROM core.decisao_transformada")
+        cursor.execute(
+            "SELECT identificador_fonte FROM core.decisao_transformada "
+            "WHERE fonte_codigo = 'tjdft-jurisdf'"
+        )
         return {row["identificador_fonte"] for row in cursor.fetchall()}
 
 

@@ -3,10 +3,15 @@ MODEL (
   kind FULL,
   grain (fonte_codigo, identificador_fonte),
   audits (
-    not_null(columns := (fonte_codigo, identificador_fonte, tribunal_sigla, ementa, data_referencia, url_fonte)),
+    not_null(columns := (fonte_codigo, identificador_fonte, identificador_documento, tribunal_sigla, ementa, data_referencia, url_fonte)),
     unique_combination_of_columns(columns := (fonte_codigo, identificador_fonte)),
     sem_segredo_de_justica,
-    data_referencia_preenchida
+    data_referencia_preenchida,
+    identificador_unico_entre_fontes,
+    data_do_stj_convertida,
+    url_carrega_o_identificador,
+    ementa_nao_vazia,
+    token_do_documento_por_fonte
   )
 );
 
@@ -20,9 +25,23 @@ MODEL (
   filtro (US3), ordenação (US6) e desempate da paginação (US7) usam.
 */
 
-WITH bruto AS (
+-- The STJ writes the same organ both with and without accents. Whichever
+-- spelling carries them is the one the screen should show.
+WITH orgao_stj AS (
+  SELECT DISTINCT ON (UPPER(UNACCENT("nomeOrgaoJulgador")))
+    UPPER(UNACCENT("nomeOrgaoJulgador")) AS chave,
+    "nomeOrgaoJulgador"                  AS nome
+  FROM raw.espelho_stj
+  WHERE COALESCE(TRIM("nomeOrgaoJulgador"), '') <> ''
+  ORDER BY
+    UPPER(UNACCENT("nomeOrgaoJulgador")),
+    ("nomeOrgaoJulgador" <> UNACCENT("nomeOrgaoJulgador")) DESC
+),
+
+bruto AS (
   SELECT
     identificador,
+    uuid                                 AS identificador_documento,
     "dataJulgamento"::DATE               AS data_julgamento,
     "dataPublicacao"::DATE               AS data_publicacao,
     processo,
@@ -37,11 +56,38 @@ WITH bruto AS (
     'tjdft-jurisdf'                      AS fonte_codigo
   FROM raw.acordao_tjdft
   WHERE NOT COALESCE("segredoJustica", FALSE)
+
+  UNION ALL
+
+  SELECT
+    e.id                                                     AS identificador,
+    e.id                                                     AS identificador_documento,
+    TO_DATE(NULLIF(e."dataDecisao", ''), 'YYYYMMDD')         AS data_julgamento,
+    -- Free text with the gazette and the page around it: DJE DATA:01/09/2010
+    TO_DATE(
+      (REGEXP_MATCH(e."dataPublicacao", '(\d{2}/\d{2}/\d{4})'))[1],
+      'DD/MM/YYYY'
+    )                                                        AS data_publicacao,
+    NULLIF(TRIM(e."numeroProcesso"), '')                     AS processo,
+    o.nome                                                   AS orgao_julgador,
+    NULLIF(TRIM(e."ministroRelator"), '')                    AS relator,
+    CAST(NULL AS BIGINT)                                     AS classe_cnj,
+    e.ementa                                                 AS ementa,
+    NULLIF(TRIM(e.decisao), '')                              AS decisao_texto,
+    FALSE                                                    AS turma_recursal,
+    FALSE                                                    AS possui_inteiro_teor,
+    e._dlt_load_id                                           AS carga_id,
+    'stj-espelhos'                                           AS fonte_codigo
+  FROM raw.espelho_stj AS e
+  LEFT JOIN orgao_stj AS o
+    ON o.chave = UPPER(UNACCENT(e."nomeOrgaoJulgador"))
+  WHERE COALESCE(TRIM(e.ementa), '') <> ''
 )
 
 SELECT
   b.fonte_codigo                                        AS fonte_codigo,
   b.identificador                                       AS identificador_fonte,
+  b.identificador_documento                             AS identificador_documento,
   f.tribunal_sigla                                      AS tribunal_sigla,
   b.processo                                            AS processo,
   b.orgao_julgador                                      AS orgao_julgador,
@@ -58,7 +104,7 @@ SELECT
   CAST(NULL AS TEXT)                                    AS deliberacao,
   b.turma_recursal                                      AS turma_recursal,
   b.possui_inteiro_teor                                 AS possui_inteiro_teor,
-  REPLACE(f.url_documento_template, '{identificador}', b.identificador) AS url_fonte,
+  REPLACE(f.url_documento_template, '{documento}', b.identificador_documento) AS url_fonte,
   v.valido                                              AS link_valido,
   b.carga_id                                            AS carga_id,
   NOW()                                                 AS carregado_em,

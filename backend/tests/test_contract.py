@@ -208,8 +208,14 @@ def test_every_documented_failure_shows_what_the_body_looks_like(
         for status, described in documented(client, path).items():
             if status.startswith(("4", "5")) and status != "422":
                 body = described["content"]["application/json"]
-                assert "example" in body, f"{path} {status} has no example"
-                assert isinstance(body["example"]["detail"], str)
+                shown = (
+                    [body["example"]]
+                    if "example" in body
+                    else [named["value"] for named in body.get("examples", {}).values()]
+                )
+                assert shown, f"{path} {status} has no example"
+                for example in shown:
+                    assert isinstance(example["detail"], str)
 
 
 def test_the_documented_404_is_the_one_the_endpoint_sends(client: TestClient) -> None:
@@ -223,6 +229,92 @@ def test_the_documented_404_is_the_one_the_endpoint_sends(client: TestClient) ->
     actual = client.get("/decisions/tjdft-jurisdf/000000").json()
 
     assert actual == promised
+
+
+def test_the_documented_inverted_range_is_the_one_the_search_sends(
+    client: TestClient,
+) -> None:
+    described = documented(client, "/decisions")["400"]
+    promised = described["content"]["application/json"]["examples"]["inverted range"]
+
+    response = client.get(
+        "/decisions",
+        params={"q": "dano moral", "date_from": "2026-03-31", "date_to": "2026-03-01"},
+    )
+
+    assert response.status_code == 400
+    assert response.json() == promised["value"]
+
+
+def test_the_documented_inverted_publication_period_is_the_one_sent(
+    client: TestClient,
+) -> None:
+    described = documented(client, "/decisions")["400"]
+    examples = described["content"]["application/json"]["examples"]
+    promised = examples["inverted publication range"]
+
+    response = client.get(
+        "/decisions",
+        params={
+            "q": "dano moral",
+            "published_from": "2026-03-31",
+            "published_to": "2026-03-01",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json() == promised["value"]
+
+
+def test_the_court_list_is_documented_with_its_shape(client: TestClient) -> None:
+    spec = client.get("/openapi.json").json()
+    operation = spec["paths"]["/courts"]["get"]
+    schemas = spec["components"]["schemas"]
+
+    assert operation["responses"]["200"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/Courts"
+    }
+    assert set(schemas["Courts"]["properties"]) == {"courts"}
+    assert set(schemas["Court"]["properties"]) == {"abbreviation", "name"}
+    assert set(schemas["Court"]["required"]) == {"abbreviation", "name"}
+    assert "with no decision yet, is left out" in operation["description"]
+
+
+def test_the_court_list_documents_an_empty_answer_and_its_failures(
+    client: TestClient,
+) -> None:
+    responses = documented(client, "/courts")
+    shown = responses["200"]["content"]["application/json"]["examples"]
+    failures = responses["503"]["content"]["application/json"]["examples"]
+
+    assert {"courts": []} in [named["value"] for named in shown.values()]
+    assert failures
+    for named in failures.values():
+        assert isinstance(named["value"]["detail"], str)
+
+
+def test_the_documented_court_example_is_what_the_endpoint_serves(
+    client: TestClient,
+) -> None:
+    """The example is hand written. This pins it against the fixture's answer."""
+    responses = documented(client, "/courts")
+    shown = responses["200"]["content"]["application/json"]["examples"]
+
+    assert client.get("/courts").json() == shown["with decisions"]["value"]
+
+
+def test_the_search_documents_every_filter(client: TestClient) -> None:
+    search = client.get("/openapi.json").json()["paths"]["/decisions"]["get"]
+    parameters = {parameter["name"]: parameter for parameter in search["parameters"]}
+
+    filters = ("tribunal", "date_from", "date_to", "published_from", "published_to")
+    dates = ("date_from", "date_to", "published_from", "published_to")
+
+    assert set(filters) <= set(parameters)
+    assert not any(parameters[name]["required"] for name in filters)
+    assert parameters["tribunal"]["schema"]["anyOf"][0]["type"] == "array"
+    for name in dates:
+        assert parameters[name]["schema"]["anyOf"][0]["format"] == "date", name
 
 
 def test_the_response_example_carries_every_field_the_schema_has(

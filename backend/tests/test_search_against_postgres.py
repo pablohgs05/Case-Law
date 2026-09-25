@@ -4,7 +4,7 @@ from psycopg.rows import DictRow
 from app.api.decisions import _normalize_highlighted_text
 from tests.conftest import needs_database
 
-pytestmark = needs_database
+pytestmark = [needs_database, pytest.mark.integration]
 
 MATCH = """
 SELECT COUNT(*) AS total FROM core.decisao

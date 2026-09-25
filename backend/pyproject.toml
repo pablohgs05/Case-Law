@@ -17,6 +17,10 @@ package = false
 [tool.pytest.ini_options]
 # Lets pytest import `app` without installing the project.
 pythonpath = ["."]
+markers = [
+    "unit: tests an isolated function or component",
+    "integration: tests the application with a real external dependency",
+]
 
 [dependency-groups]
 dev = [

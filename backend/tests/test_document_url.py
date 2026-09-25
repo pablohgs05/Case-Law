@@ -7,7 +7,7 @@ from psycopg.rows import DictRow
 from tests.conftest import FIXTURES, needs_database
 from tests.test_seal_filter import MODEL, transformation
 
-pytestmark = needs_database
+pytestmark = [needs_database, pytest.mark.integration]
 
 SEED = (
     Path(__file__).resolve().parents[2]

@@ -12,7 +12,7 @@ from app.main import app
 from tests.conftest import FIXTURES, needs_database
 from tests.test_seal_filter import MODEL, transformation
 
-pytestmark = needs_database
+pytestmark = [needs_database, pytest.mark.integration]
 
 CARGA_MODEL = MODEL.parent / "core_carga.sql"
 

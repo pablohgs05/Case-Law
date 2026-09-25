@@ -19,6 +19,8 @@
 **Documentation Folder** 📄 [documentation/](documentation/)  
 **Project Video** 📽️ [Sprint 1 increment](https://www.youtube.com/watch?v=82bR--xO6Fs)  
 
+Testing process: [unit and integration tests](TESTING.md).
+
 ---
 
 ## Challenge <a id="challenge"></a>

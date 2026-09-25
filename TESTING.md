@@ -126,3 +126,37 @@ repetíveis e resultados verificáveis. A etapa de CI pode executar exatamente
 esses comandos e bloquear a progressão de uma alteração quando os critérios
 não forem atendidos. A implementação deste documento é o contrato de testes;
 o CI é a automação que o consome.
+
+## 7. Roteiro para apresentar o processo
+
+Abra a história escolhida e diga:
+
+> “No planejamento, a equipe define o comportamento esperado e classifica o
+> teste. Se eu verifico uma função ou componente isolado, é unitário. Se
+> preciso da API conversando com o PostgreSQL real, é integração. Eu não
+> escolho essa classificação sozinho: ela é definida pela equipe a partir do
+> risco e das dependências da história.”
+
+Depois mostre os comandos:
+
+```bash
+cd backend
+uv run pytest -m unit -v
+uv run pytest -m integration -v
+cd ../frontend
+npm test
+```
+
+Explique a decisão:
+
+> “O teste unitário passa sem banco porque as dependências externas são
+> simuladas. O teste de integração só é considerado aprovado quando executa
+> contra um PostgreSQL de teste e os fixtures reais. No frontend, o Vitest
+> executa os componentes em `jsdom`. O resultado é registrado na PR para que
+> outro integrante revise a classificação, os cenários e a evidência.”
+
+Se a execução falhar, a PR volta ao autor, que corrige, executa novamente e
+anexa o novo resultado. Se passar e atender ao critério, o revisor aprova e a
+alteração segue para as próximas etapas do DevOps. Assim, o processo não é
+apenas uma lista de ferramentas: há decisão, execução, evidência, revisão e
+tratamento de falha.

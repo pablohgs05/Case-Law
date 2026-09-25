@@ -6,7 +6,7 @@ from psycopg.rows import DictRow
 
 from tests.conftest import FIXTURES, needs_database
 
-pytestmark = needs_database
+pytestmark = [needs_database, pytest.mark.integration]
 
 MODEL = (
     Path(__file__).resolve().parents[2]

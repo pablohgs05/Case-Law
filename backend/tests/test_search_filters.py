@@ -18,7 +18,7 @@ from app.db import get_connection
 from app.main import app
 from tests.conftest import needs_database
 
-pytestmark = needs_database
+pytestmark = [needs_database, pytest.mark.integration]
 
 # The fixture holds only TJDFT. These add two more courts and put decisions on
 # the edges of March 2026, so a bound that is exclusive by mistake loses one.

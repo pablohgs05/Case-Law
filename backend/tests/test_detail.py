@@ -19,7 +19,7 @@ from app.main import app
 from tests.conftest import FIXTURES, needs_database
 from tests.test_seal_filter import SEALED, transformation
 
-pytestmark = needs_database
+pytestmark = [needs_database, pytest.mark.integration]
 
 SOURCE = "tjdft-jurisdf"
 PRESENT = "1000001"

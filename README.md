@@ -22,7 +22,7 @@
 **Documentation Folder** 📄 Available in the repository  
 **Project Video** 📽️ Not started  
 
-Testing process: [unit tests](TESTING.md).
+Testing process: [unit and integration tests](TESTING.md).
 
 ---
 

@@ -16,7 +16,7 @@ from tests.conftest import FIXTURES, needs_database
 from tests.test_courts import decide, register
 from tests.test_seal_filter import transformation
 
-pytestmark = needs_database
+pytestmark = [needs_database, pytest.mark.integration]
 
 
 def coverage(client: TestClient) -> dict[str, Any]:

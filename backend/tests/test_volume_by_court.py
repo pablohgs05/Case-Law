@@ -17,7 +17,7 @@ from psycopg.rows import DictRow
 from tests.conftest import needs_database
 from tests.test_courts import decide, register
 
-pytestmark = needs_database
+pytestmark = [needs_database, pytest.mark.integration]
 
 TERM = "dano moral"
 

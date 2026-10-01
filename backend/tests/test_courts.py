@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import psycopg
+import pytest
 from fastapi.testclient import TestClient
 from psycopg.rows import DictRow
 

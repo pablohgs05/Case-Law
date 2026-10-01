@@ -12,6 +12,8 @@ import pytest
 
 from app.ementa import split
 
+pytestmark = pytest.mark.unit
+
 STRUCTURED = """DIREITO CIVIL. APELAÇÃO. RECURSO PROVIDO.
 I. CASO EM EXAME
 1. Apelação interposta contra sentença de improcedência.

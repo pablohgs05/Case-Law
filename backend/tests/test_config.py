@@ -2,6 +2,8 @@ import pytest
 
 from app.config import Settings
 
+pytestmark = pytest.mark.unit
+
 
 def test_cors_origins_defaults_to_the_local_frontend() -> None:
     assert Settings().cors_origins == ["http://localhost:5173"]

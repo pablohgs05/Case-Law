@@ -10,6 +10,8 @@ from app.db import get_connection
 from app.errors import MALFORMED, NOT_PUBLISHED, OUT_OF_DATE, UNAVAILABLE
 from app.main import app
 
+pytestmark = pytest.mark.unit
+
 
 class FailingConnection:
     def __init__(self, error: Exception) -> None:

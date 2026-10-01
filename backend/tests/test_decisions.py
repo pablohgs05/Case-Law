@@ -18,6 +18,8 @@ from app.api.decisions import (
 from app.db import get_connection
 from app.main import app
 
+pytestmark = pytest.mark.unit
+
 MATCHING_ROW = {
     "fonte_codigo": "tjdft-jurisdf",
     "identificador_fonte": "2084700",

@@ -27,7 +27,7 @@ from app.db import get_connection
 from app.main import app
 from tests.conftest import needs_database
 
-pytestmark = needs_database
+pytestmark = [needs_database, pytest.mark.integration]
 
 TERM = "usufruto"
 EMENTA = "DIREITO CIVIL. Usufruto vitalício instituído por escritura pública."

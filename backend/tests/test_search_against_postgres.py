@@ -1,4 +1,5 @@
 import psycopg
+import pytest
 from psycopg.rows import DictRow
 
 from app.api.decisions import _normalize_highlighted_text

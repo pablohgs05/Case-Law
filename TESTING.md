@@ -82,6 +82,20 @@ e não depende de outro serviço; por isso é unitário.
 
 ## 5. Fluxo aplicado no Scrum
 
+Unidade é a menor parte do código que possui comportamento próprio e pode ser executada e testada isoladamente
+
+A unidade a ser testada no projeto é a classe:
+Serão priorizadas para cobertura de teste os seguintes tipos:
+- regra de negócio
+- serviço
+- utilitárias
+Na reunião de planejamento são definidas quais classes serão cobertas pelos testes unitários
+
+Criação dos casos de teste pelo dev -> isolará as classes e testará seguindo as prátcas:
+- Given - o contexto inicial
+- When - ação executada
+- Then - verificando o resultado esperado
+
 ```text
 Planning da história
         ↓

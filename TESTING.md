@@ -178,7 +178,25 @@ O autor registra:
 7. decisão do revisor;
 8. correção e novo resultado após uma devolução.
 
-## 9. Relação com DevOps
+## 9. O que precisa ser definido pela equipe
+
+Antes de começar o código, a equipe deve preencher estas decisões para cada
+história:
+
+| Decisão | Pergunta prática | Exemplo |
+|---|---|---|
+| Critério | O que precisa funcionar para a história ser aceita? | A busca deve devolver somente decisões do tribunal escolhido. |
+| Cenário | Qual entrada e resultado serão verificados? | Dado um tribunal com decisões, quando pesquisar, então só ele aparece. |
+| Tipo | O teste usa dependência simulada ou real? | Regra de filtro com banco real: `integration`. |
+| Comando | Como qualquer integrante repete a verificação? | `uv run pytest -m integration -v`. |
+| Evidência | Que resultado será anexado à PR? | Saída do comando e quantidade de testes aprovados. |
+| Responsável | Quem implementa e quem revisa? | Autor executa; outro integrante confere e aprova. |
+
+Você, no papel de DevOps, organiza essas informações e verifica se elas são
+repetíveis. A equipe de desenvolvimento define o comportamento da história;
+você não precisa inventar sozinho os critérios do produto.
+
+## 10. Relação com DevOps
 
 O Scrum fornece a história e os critérios. O processo de testes transforma
 esses critérios em verificações repetíveis. A PR concentra o código, os
@@ -190,7 +208,24 @@ critério definido, teste classificado, código testado, evidência registrada,
 PR revisada, correção realizada quando necessário e alteração aprovada antes
 de continuar no DevOps.
 
-## 10. Ferramentas
+## 10. Roteiro curto para apresentar
+
+1. **Contexto:** “A equipe está desenvolvendo a API; meu trabalho é organizar
+   como o teste entra no fluxo de DevOps.”
+2. **Decisão:** “No Planning, a equipe define o critério, o cenário e se o
+   teste será unitário ou de integração.”
+3. **Execução:** “O autor implementa, executa o comando e registra a evidência
+   na PR.”
+4. **Revisão:** “Outro integrante confere a classificação, os cenários e o
+   resultado. Se falhar, a PR volta para correção.”
+5. **Automação:** “O CI repete os comandos e impede o avanço quando os
+   critérios não são atendidos.”
+
+Uma frase para diferenciar os tipos: **unitário testa uma parte isolada;
+integração testa partes trabalhando com uma dependência real**. Neste projeto,
+o PostgreSQL real é o principal exemplo de integração.
+
+## 11. Ferramentas
 
 - **PyTest:** execução dos testes do backend Python;
 - **Vitest:** execução dos testes do frontend React/TypeScript;
@@ -202,7 +237,7 @@ de continuar no DevOps.
 - **Coverage Gutters:** visualização da cobertura durante o desenvolvimento;
 - **CI:** execução automatizada dos comandos já definidos pelo processo.
 
-## 11. Fala para a apresentação
+## 12. Fala completa para a apresentação
 
 > “No Planning, o Product Owner apresenta a história e a equipe define os
 > critérios, os cenários e o tipo de teste. Unidade é a menor parte do código

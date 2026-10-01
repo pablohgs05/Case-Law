@@ -196,6 +196,60 @@ Você, no papel de DevOps, organiza essas informações e verifica se elas são
 repetíveis. A equipe de desenvolvimento define o comportamento da história;
 você não precisa inventar sozinho os critérios do produto.
 
+### Exemplo concreto: filtro por tribunal
+
+Suponha que a história seja: **“Como analista, quero filtrar decisões por
+tribunal.”** O critério de aceitação pode ser escrito assim:
+
+> Dado que existem decisões do TJDFT e do STJ, quando o usuário selecionar
+> TJDFT, então a API deve retornar somente decisões do TJDFT, informar a
+> quantidade correta e não retornar decisões do STJ.
+
+Esse critério gera os cenários:
+
+1. **Sucesso:** selecionar TJDFT retorna apenas TJDFT.
+2. **Vazio:** selecionar um tribunal sem decisões retorna uma lista vazia, sem
+   erro.
+3. **Combinação:** selecionar dois tribunais retorna a união dos dois.
+4. **Limite/erro:** informar um tribunal inexistente não causa erro interno.
+
+O primeiro teste pode ser unitário se usar uma base falsa preparada pelo teste.
+Ele verifica a regra de resposta sem depender do PostgreSQL. O teste é de
+integração quando executa a API com PostgreSQL real e consulta as tabelas e os
+índices verdadeiros. Os dois tipos podem existir para a mesma história:
+unitário para feedback rápido e integração para confirmar que as partes
+funcionam juntas.
+
+### Respostas curtas para perguntas do professor
+
+**“Quais são os critérios?”**
+
+São as condições que precisam ser verdadeiras para aceitar a história. Neste
+exemplo: filtrar pelo tribunal certo, retornar a quantidade certa, tratar lista
+vazia e não quebrar com tribunal inexistente.
+
+**“O que é integração?”**
+
+É quando o teste não simula uma parte importante: ele coloca a API e o
+PostgreSQL real para trabalhar juntos e verifica o resultado da comunicação.
+
+**“Qual é a diferença para unitário?”**
+
+Unitário testa uma parte isolada, normalmente com dados falsos ou mocks.
+Integração testa a comunicação real entre partes, como API, consulta SQL e
+PostgreSQL.
+
+**“Quem decide o critério?”**
+
+O Product Owner explica o valor da história e a equipe transforma isso em
+condições verificáveis. O DevOps organiza o comando, a evidência e a execução
+no CI; não decide sozinho a regra do produto.
+
+**“Como você prova que foi aplicado?”**
+
+Mostro o cenário, o teste classificado, o comando executado, o resultado na PR
+e o CI repetindo a verificação. Se falhar, a PR volta para correção.
+
 ## 10. Relação com DevOps
 
 O Scrum fornece a história e os critérios. O processo de testes transforma

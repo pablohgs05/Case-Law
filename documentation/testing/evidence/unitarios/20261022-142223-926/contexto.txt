@@ -1,0 +1,14 @@
+Data local: 2026-10-22T14:22:24.2779000-03:00
+
+Commit base: cb46e0bb5f1fca860abfecab707af1c3d9177f01
+
+Alterações locais (se houver):
+
+?? documentation/testing/evidence/apresentacao-atual.txt
+
+?? documentation/testing/evidence/backend-unit-atual.txt
+
+?? documentation/testing/evidence/frontend-atual.txt
+
+?? documentation/testing/evidence/unitarios/
+

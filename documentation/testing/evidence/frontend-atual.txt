@@ -1,0 +1,484 @@
+
+
+ RUN  v2.1.9 C:/Users/EXPSIL20/OneDrive - Gerdau/Documentos/ChatGPT/Devops - Sakaue/Case-Law/frontend
+
+
+
+ ✓ src/tests/paging.test.ts (10 tests) 6ms
+
+ ✓ src/tests/searchFilterRules.test.ts (13 tests) 9ms
+
+ ✓ src/tests/decisionFormat.test.ts (5 tests) 23ms
+
+ ✓ src/tests/snippet.test.tsx (11 tests) 358ms
+
+ ✓ src/tests/officialLink.test.tsx (10 tests) 360ms
+
+stderr | src/tests/volumeAgreesWithSearch.test.tsx > the chart and the results agree on how many there are > shows the same number on both, over the whole base
+
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+
+
+stderr | src/tests/backToResults.test.tsx > back to the results > beside the list, the decision offers no way back of its own: the list is there
+
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+
+
+stderr | src/tests/courtVolume.test.tsx > the result tabs > are Documentos and Panorama, and nothing else
+
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+Warning: An update to HomePage inside a test was not wrapped in act(...).
+
+
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+
+
+act(() => {
+
+  /* fire events that update state */
+
+});
+
+/* assert on the output */
+
+
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+
+    at HomePage (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\pages\HomePage.tsx:96:52)
+
+    at RenderedRoute (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:535:7)
+
+    at Routes (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1269:7)
+
+    at SearchSessionProvider (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\search\SearchSessionProvider.tsx:7:34)
+
+    at div
+
+    at App (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\App.tsx:18:61)
+
+    at Router (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1203:17)
+
+    at MemoryRouter (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1097:7)
+
+
+
+stderr | src/tests/coveragePanel.test.tsx > the top bar > holds the search and the way to the coverage, and nothing else
+
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+Warning: An update to HomePage inside a test was not wrapped in act(...).
+
+
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+
+
+act(() => {
+
+  /* fire events that update state */
+
+});
+
+/* assert on the output */
+
+
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+
+    at HomePage (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\pages\HomePage.tsx:96:52)
+
+    at RenderedRoute (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:535:7)
+
+    at Routes (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1269:7)
+
+    at SearchSessionProvider (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\search\SearchSessionProvider.tsx:7:34)
+
+    at div
+
+    at App (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\App.tsx:18:61)
+
+    at Router (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1203:17)
+
+    at MemoryRouter (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1097:7)
+
+
+
+stderr | src/tests/searchFilterPanel.test.tsx > the court options > come from the court list endpoint, by the abbreviation it returns
+
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+
+
+stderr | src/tests/decisionAddress.test.tsx > a result > links to its own address, by collection and identifier
+
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+
+
+stderr | src/tests/resultsPagination.test.tsx > the range of results > on the first page of 45, shows 1–6 of 45, from the first page asked for
+
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+
+
+stderr | src/tests/coveragePanel.test.tsx > the top bar > on the coverage, holds only the way to it: there is no search there
+
+Warning: An update to CoveragePage inside a test was not wrapped in act(...).
+
+
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+
+
+act(() => {
+
+  /* fire events that update state */
+
+});
+
+/* assert on the output */
+
+
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+
+    at CoveragePage (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\pages\CoveragePage.tsx:20:42)
+
+    at RenderedRoute (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:535:7)
+
+    at Routes (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1269:7)
+
+    at SearchSessionProvider (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\search\SearchSessionProvider.tsx:7:34)
+
+    at div
+
+    at App (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\App.tsx:18:61)
+
+    at Router (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1203:17)
+
+    at MemoryRouter (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1097:7)
+
+
+
+stderr | src/tests/resultsSort.test.tsx > the order selector > is not offered before there is a search to order
+
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+Warning: An update to HomePage inside a test was not wrapped in act(...).
+
+
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+
+
+act(() => {
+
+  /* fire events that update state */
+
+});
+
+/* assert on the output */
+
+
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+
+    at HomePage (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\pages\HomePage.tsx:96:52)
+
+    at RenderedRoute (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:535:7)
+
+    at Routes (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1269:7)
+
+    at SearchSessionProvider (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\search\SearchSessionProvider.tsx:7:34)
+
+    at div
+
+    at App (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\App.tsx:18:61)
+
+    at Router (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1203:17)
+
+    at MemoryRouter (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1097:7)
+
+
+
+ ✓ src/tests/DecisionResultCard.test.tsx (2 tests) 115ms
+
+stderr | src/tests/coveragePanel.test.tsx > the coverage as the base answers it > says the numbers are the whole base, not the search
+
+Warning: An update to CoveragePage inside a test was not wrapped in act(...).
+
+
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+
+
+act(() => {
+
+  /* fire events that update state */
+
+});
+
+/* assert on the output */
+
+
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+
+    at CoveragePage (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\pages\CoveragePage.tsx:20:42)
+
+    at RenderedRoute (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:535:7)
+
+    at Routes (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1269:7)
+
+    at SearchSessionProvider (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\search\SearchSessionProvider.tsx:7:34)
+
+    at div
+
+    at App (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\App.tsx:18:61)
+
+    at Router (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1203:17)
+
+    at MemoryRouter (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1097:7)
+
+
+
+stderr | src/tests/decisionDetail.test.tsx > choosing decisions from the results > opens the first result, and another one only swaps the right side
+
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+
+
+ ✓ src/tests/decisionAddress.test.tsx (7 tests) 1415ms
+
+   ✓ a result > links to its own address, by collection and identifier 440ms
+
+ ✓ src/tests/decisionDetail.test.tsx (20 tests) 1754ms
+
+   ✓ choosing decisions from the results > opens the first result, and another one only swaps the right side 381ms
+
+ ✓ src/tests/resultsSort.test.tsx (12 tests) 3284ms
+
+   ✓ the order selector > shows up beside the results on the order applied, relevance, sending no order 493ms
+
+   ✓ changing the order > asks for relevance again by sending no order, the API default 341ms
+
+   ✓ changing the order > never applies an edit still in the search box 500ms
+
+ ✓ src/tests/coveragePanel.test.tsx (18 tests) 3840ms
+
+   ✓ the coverage beside a search > is asked with nothing from a filtered search 664ms
+
+   ✓ the coverage beside a search > stays the whole base after a search that found nothing 670ms
+
+   ✓ going to the coverage and back > finds the search as it was, with no new search 673ms
+
+   ✓ going to the coverage and back > returns to the decision it was opened from 648ms
+
+ ✓ src/tests/searchFilterPanel.test.tsx (20 tests) 4486ms
+
+   ✓ the court options > come from the court list endpoint, by the abbreviation it returns 389ms
+
+   ✓ choosing courts > selects several and unselects one by choosing it again 425ms
+
+   ✓ applying the filters > sends each court and every day exactly as chosen, on the first page 312ms
+
+   ✓ applying the filters > keeps the expression 482ms
+
+   ✓ applying the filters > goes back to an unrestricted search once every filter is removed 378ms
+
+stderr | src/tests/backToResults.test.tsx > the search session > survives the list being unmounted, with no new search when it comes back
+
+Warning: An update to DecisionDetail inside a test was not wrapped in act(...).
+
+
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+
+
+act(() => {
+
+  /* fire events that update state */
+
+});
+
+/* assert on the output */
+
+
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+
+    at DecisionDetail (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\components\DecisionDetail.tsx:32:27)
+
+    at div
+
+    at div
+
+    at main
+
+    at HomePage (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\pages\HomePage.tsx:96:52)
+
+    at SearchSessionProvider (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\search\SearchSessionProvider.tsx:7:34)
+
+    at Router (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1203:17)
+
+    at MemoryRouter (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1097:7)
+
+    at Screen (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\tests\backToResults.test.tsx:215:21)
+
+Warning: An update to HomePage inside a test was not wrapped in act(...).
+
+
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+
+
+act(() => {
+
+  /* fire events that update state */
+
+});
+
+/* assert on the output */
+
+
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+
+    at HomePage (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\pages\HomePage.tsx:96:52)
+
+    at SearchSessionProvider (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\search\SearchSessionProvider.tsx:7:34)
+
+    at Router (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1203:17)
+
+    at MemoryRouter (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\node_modules\react-router\dist\umd\react-router.development.js:1097:7)
+
+    at Screen (C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\frontend\src\tests\backToResults.test.tsx:215:21)
+
+
+
+ ✓ src/tests/backToResults.test.tsx (9 tests) 4972ms
+
+   ✓ back to the results > beside the list, the decision offers no way back of its own: the list is there 1141ms
+
+   ✓ back to the results > by the browser's Back button: the same, with no new search 757ms
+
+   ✓ back to the results > lands on the list, not on the decision read before, after reading several 749ms
+
+   ✓ back to the results > never applies what is still being edited 815ms
+
+   ✓ back to the results > leaves a new search, and a new order, working as before 657ms
+
+   ✓ back to the results > from a decision chosen after a new search, lands on the new list only 593ms
+
+ ✓ src/tests/scrumCardBdd.test.tsx (3 tests) 74ms
+
+ ✓ src/tests/volumeAgreesWithSearch.test.tsx (3 tests) 7336ms
+
+   ✓ the chart and the results agree on how many there are > shows the same number on both, over the whole base 2051ms
+
+   ✓ the chart and the results agree on how many there are > still agrees once a filter narrows the cut 2756ms
+
+   ✓ the chart and the results agree on how many there are > asks both endpoints for the same cut 2527ms
+
+stderr | src/tests/resultsPagination.test.tsx > back from a decision to a later page > leaves no second list entry behind when a page is changed from a decision
+
+No routes matched location "/antes" 
+
+
+
+ ✓ src/tests/resultsPagination.test.tsx (25 tests) 12187ms
+
+   ✓ the range of results > on the first page of 45, shows 1–6 of 45, from the first page asked for 757ms
+
+   ✓ the range of results > goes 1–6, 7–12, 13–15: the last page ends at the total, not a full page past it 481ms
+
+   ✓ moving between pages > from a middle page, goes forward and back, asking only for what it does not hold 511ms
+
+   ✓ moving between pages > back to the first page from a later one, with its first and previous disabled 374ms
+
+   ✓ moving between pages > keeps the expression, filters, order and page size, changing only the page 374ms
+
+   ✓ moving between pages > never applies an expression or a filter still being edited 632ms
+
+   ✓ starting over on the first page > after new filters are applied 338ms
+
+   ✓ back from a decision to a later page > through the browser's Back, walking the history, is the same 1064ms
+
+   ✓ back from a decision to a later page > keeps the third page over one decision after another 1426ms
+
+   ✓ back from a decision to a later page > starts on the first page again when, back on the list, a new search or filters are applied 1241ms
+
+   ✓ back from a decision to a later page > never brings back the page of another search, one started from a decision 1237ms
+
+   ✓ back from a decision to a later page > leaves no second list entry behind when a page is changed from a decision 1048ms
+
+ ✓ src/tests/courtVolume.test.tsx (16 tests) 21909ms
+
+   ✓ the result tabs > keep the search as it was: expression, filters, order, page and results 2334ms
+
+   ✓ the aggregation request > carries the applied expression and filters, never the page, the order or an edit 1715ms
+
+   ✓ the aggregation request > is not repeated, nor changed, by another page or order of the same cut 1720ms
+
+   ✓ the aggregation request > follows new filters, including ones applied while the documents were up 1701ms
+
+   ✓ the aggregation request > keeps the newest cut when an older answer arrives late 2829ms
+
+   ✓ the chart and the composition > rank the courts largest first even when the API does not, ties by abbreviation 1402ms
+
+   ✓ the chart and the composition > show every count beside its court, the same in both, without hover 1352ms
+
+   ✓ the chart and the composition > measure the bars from zero on whole, round ticks 1357ms
+
+   ✓ the chart and the composition > say when the base was last updated, as the API reports it 1387ms
+
+   ✓ the chart and the composition > say the date is unavailable rather than show the time of the request 1375ms
+
+   ✓ the panorama without counts to draw > shows it is loading, with no number, until the count arrives 1351ms
+
+   ✓ the panorama without counts to draw > says nothing was found, with no empty chart, when the cut has no decision 1381ms
+
+   ✓ the panorama without counts to draw > says it failed, never as no decisions, and asks again on Tentar novamente 1420ms
+
+
+
+ Test Files  16 passed (16)
+
+      Tests  184 passed (184)
+
+   Start at  14:21:02
+
+   Duration  42.13s (transform 4.64s, setup 9.62s, collect 195.46s, tests 62.13s, environment 30.85s, prepare 4.42s)
+
+
+

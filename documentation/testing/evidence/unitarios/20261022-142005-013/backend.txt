@@ -1,0 +1,60 @@
+============================= test session starts =============================
+
+
+platform win32 -- Python 3.12.14, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\backend\.venv\Scripts\python.exe
+
+
+cachedir: .pytest_cache
+
+
+rootdir: C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\backend
+
+
+configfile: pyproject.toml
+
+
+plugins: anyio-4.15.1
+
+
+collecting ... collected 4 items
+
+
+
+
+
+tests/test_scrum_ementa_bdd.py::test_rebuild_preserva_texto_e_ordem_das_secoes[] PASSED [ 25%]
+
+
+tests/test_scrum_ementa_bdd.py::test_rebuild_preserva_texto_e_ordem_das_secoes[A\xe7\xe3o.\n] PASSED [ 50%]
+
+
+tests/test_scrum_ementa_bdd.py::test_rebuild_preserva_texto_e_ordem_das_secoes[  texto com espa\xe7os  ] PASSED [ 75%]
+
+
+tests/test_scrum_ementa_bdd.py::test_rebuild_preserva_secoes_distintas PASSED [100%]
+
+
+
+
+
+============================== warnings summary ===============================
+
+
+.venv\Lib\site-packages\starlette\testclient.py:53
+
+
+  C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\backend\.venv\Lib\site-packages\starlette\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+
+
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+
+
+
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+
+
+======================== 4 passed, 1 warning in 0.05s =========================
+
+

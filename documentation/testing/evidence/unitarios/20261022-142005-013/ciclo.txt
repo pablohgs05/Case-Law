@@ -1,0 +1,411 @@
+ENSAIO: ordem das se��es trocada na CLASSE tempor�ria; esperamos uma falha.
+
+
+FFFF                                                                     [100%]
+
+
+================================== FAILURES ===================================
+
+
+______________ test_rebuild_preserva_texto_e_ordem_das_secoes[] _______________
+
+
+
+
+
+text = ''
+
+
+
+
+
+    @pytest.mark.unit
+
+
+    @pytest.mark.parametrize("text", ["", "A��o.\n", "  texto com espa�os  "])
+
+
+    def test_rebuild_preserva_texto_e_ordem_das_secoes(text: str) -> None:
+
+
+        # Given: classe utilit�ria isolada, sem banco, rede ou API.
+
+
+        ementa = StructuredEmenta(
+
+
+            headnote=text,
+
+
+            case=Section("I.", text),
+
+
+            question=Section("II.", text),
+
+
+            reasoning=Section("III.", text),
+
+
+            ruling=Section("IV.", text),
+
+
+        )
+
+
+    
+
+
+        # When: o m�todo da classe reconstr�i a ementa.
+
+
+        rebuilt = ementa.rebuild()
+
+
+    
+
+
+        # Then: nenhuma se��o, espa�o ou caractere � perdido ou reordenado.
+
+
+>       assert rebuilt == text + "I." + text + "II." + text + "III." + text + "IV." + text
+
+
+E       AssertionError: assert 'II.I.III.IV.' == 'I.II.III.IV.'
+
+
+E         
+
+
+E         - I.II.III.IV.
+
+
+E         ?   -
+
+
+E         + II.I.III.IV.
+
+
+E         ? +
+
+
+
+
+
+C:\Users\EXPSIL20\AppData\Local\Temp\case-law-demo-l4cvttll\test_rehearsal.py:23: AssertionError
+
+
+________ test_rebuild_preserva_texto_e_ordem_das_secoes[A\xe7\xe3o.\n] ________
+
+
+
+
+
+text = 'A��o.\n'
+
+
+
+
+
+    @pytest.mark.unit
+
+
+    @pytest.mark.parametrize("text", ["", "A��o.\n", "  texto com espa�os  "])
+
+
+    def test_rebuild_preserva_texto_e_ordem_das_secoes(text: str) -> None:
+
+
+        # Given: classe utilit�ria isolada, sem banco, rede ou API.
+
+
+        ementa = StructuredEmenta(
+
+
+            headnote=text,
+
+
+            case=Section("I.", text),
+
+
+            question=Section("II.", text),
+
+
+            reasoning=Section("III.", text),
+
+
+            ruling=Section("IV.", text),
+
+
+        )
+
+
+    
+
+
+        # When: o m�todo da classe reconstr�i a ementa.
+
+
+        rebuilt = ementa.rebuild()
+
+
+    
+
+
+        # Then: nenhuma se��o, espa�o ou caractere � perdido ou reordenado.
+
+
+>       assert rebuilt == text + "I." + text + "II." + text + "III." + text + "IV." + text
+
+
+E       AssertionError: assert 'A��o.\nII.A�....\nIV.A��o.\n' == 'A��o.\nI.A��....\nIV.A��o.\n'
+
+
+E         
+
+
+E           A��o.
+
+
+E         + II.A��o.
+
+
+E           I.A��o.
+
+
+E         - II.A��o.
+
+
+E           III.A��o.
+
+
+E           IV.A��o.
+
+
+
+
+
+C:\Users\EXPSIL20\AppData\Local\Temp\case-law-demo-l4cvttll\test_rehearsal.py:23: AssertionError
+
+
+__ test_rebuild_preserva_texto_e_ordem_das_secoes[  texto com espa\xe7os  ] ___
+
+
+
+
+
+text = '  texto com espa�os  '
+
+
+
+
+
+    @pytest.mark.unit
+
+
+    @pytest.mark.parametrize("text", ["", "A��o.\n", "  texto com espa�os  "])
+
+
+    def test_rebuild_preserva_texto_e_ordem_das_secoes(text: str) -> None:
+
+
+        # Given: classe utilit�ria isolada, sem banco, rede ou API.
+
+
+        ementa = StructuredEmenta(
+
+
+            headnote=text,
+
+
+            case=Section("I.", text),
+
+
+            question=Section("II.", text),
+
+
+            reasoning=Section("III.", text),
+
+
+            ruling=Section("IV.", text),
+
+
+        )
+
+
+    
+
+
+        # When: o m�todo da classe reconstr�i a ementa.
+
+
+        rebuilt = ementa.rebuild()
+
+
+    
+
+
+        # Then: nenhuma se��o, espa�o ou caractere � perdido ou reordenado.
+
+
+>       assert rebuilt == text + "I." + text + "II." + text + "III." + text + "IV." + text
+
+
+E       AssertionError: assert '  texto com ...com espa�os  ' == '  texto com ...com espa�os  '
+
+
+E         
+
+
+E         Skipping 63 identical trailing characters in diff, use -v to show
+
+
+E         -   texto com espa�os  I.  texto com espa�os  II.  texto
+
+
+E         ?                                             -
+
+
+E         +   texto com espa�os  II.  texto com espa�os  I.  texto
+
+
+E         ?                      +
+
+
+
+
+
+C:\Users\EXPSIL20\AppData\Local\Temp\case-law-demo-l4cvttll\test_rehearsal.py:23: AssertionError
+
+
+___________________ test_rebuild_preserva_secoes_distintas ____________________
+
+
+
+
+
+    @pytest.mark.unit
+
+
+    def test_rebuild_preserva_secoes_distintas() -> None:
+
+
+        # Dado: textos diferentes permitem detectar perda, duplica��o e troca de ordem.
+
+
+        ementa = StructuredEmenta(
+
+
+            headnote="DIREITO CIVIL.\n",
+
+
+            case=Section("I. CASO EM EXAME\n", "Pedido de repara��o.\n"),
+
+
+            question=Section("II. QUEST�O EM DISCUSS�O\n", "Existe dano?\n"),
+
+
+            reasoning=Section("III. RAZ�ES DE DECIDIR\n", "Prova insuficiente.\n"),
+
+
+            ruling=Section("IV. DISPOSITIVO\n", "Recurso negado.\n"),
+
+
+        )
+
+
+        # Quando: a classe utilit�ria reconstr�i a ementa sem banco ou API.
+
+
+        rebuilt = ementa.rebuild()
+
+
+        # Ent�o: comparar com texto literal independente da implementa��o.
+
+
+>       assert rebuilt == (
+
+
+            "DIREITO CIVIL.\n"
+
+
+            "I. CASO EM EXAME\nPedido de repara��o.\n"
+
+
+            "II. QUEST�O EM DISCUSS�O\nExiste dano?\n"
+
+
+            "III. RAZ�ES DE DECIDIR\nProva insuficiente.\n"
+
+
+            "IV. DISPOSITIVO\nRecurso negado.\n"
+
+
+        )
+
+
+E       AssertionError: assert 'DIREITO CIVI...rso negado.\n' == 'DIREITO CIVI...rso negado.\n'
+
+
+E         
+
+
+E         Skipping 67 identical trailing characters in diff, use -v to show
+
+
+E           DIREITO CIVIL.
+
+
+E         + II. QUEST�O EM DISCUSS�O
+
+
+E         + Existe dano?
+
+
+E           I. CASO EM EXAME
+
+
+E           Pedido de repara��o....
+
+
+E         
+
+
+E         ...Full output truncated (3 lines hidden), use '-vv' to show
+
+
+
+
+
+C:\Users\EXPSIL20\AppData\Local\Temp\case-law-demo-l4cvttll\test_rehearsal.py:39: AssertionError
+
+
+=========================== short test summary info ===========================
+
+
+FAILED ::test_rebuild_preserva_texto_e_ordem_das_secoes[] - AssertionError: a...
+
+
+FAILED ::test_rebuild_preserva_texto_e_ordem_das_secoes[A\xe7\xe3o.\n] - Asse...
+
+
+FAILED ::test_rebuild_preserva_texto_e_ordem_das_secoes[  texto com espa\xe7os  ]
+
+
+FAILED ::test_rebuild_preserva_secoes_distintas - AssertionError: assert 'DIR...
+
+
+4 failed in 0.27s
+
+
+CORRE��O: ordem original restaurada na CLASSE tempor�ria.
+
+
+....                                                                     [100%]
+
+
+4 passed in 0.14s
+
+
+Ensaio conclu�do: falhou, foi corrigido e passou; arquivos do projeto intactos.
+
+

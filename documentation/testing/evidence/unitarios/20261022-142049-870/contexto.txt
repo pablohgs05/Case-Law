@@ -1,0 +1,28 @@
+Data local: 2026-10-22T14:20:50.2633087-03:00
+
+Commit base: 2938a5d597a7aaff72ea92ca7a410f5d8b229cea
+
+Alterações locais (se houver):
+
+ M .github/PULL_REQUEST_TEMPLATE/testes.md
+
+ M TESTING.md
+
+ M backend/scripts/demo_test_cycle.py
+
+ M backend/tests/test_scrum_ementa_bdd.py
+
+ M documentation/testing/APRESENTACAO.md
+
+?? backend/tests/test_scrum_ementa_integration.py
+
+?? docker-compose.test.yml
+
+?? documentation/testing/INTEGRACAO-POSTERIOR.md
+
+?? documentation/testing/PLANNING-E-REVISAO.md
+
+?? documentation/testing/evidence/unitarios/
+
+?? scripts/
+

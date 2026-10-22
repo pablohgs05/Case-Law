@@ -1,5 +1,6 @@
 """Ensaio local de falha/correção. Não representa revisão humana nem defeito real."""
 
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -10,19 +11,19 @@ def main() -> int:
     backend = Path(__file__).resolve().parents[1]
     source = backend / "tests/test_scrum_ementa_bdd.py"
     original = source.read_text(encoding="utf-8")
-    assertion = 'assert rebuilt == text + "I." + text + "II." + text + "III." + text + "IV." + text'
-    if original.count(assertion) != 1:
-        raise RuntimeError("O teste mudou; atualize o ensaio antes de executar.")
+    implementation = (backend / "app/ementa.py").read_text(encoding="utf-8")
+    correct = "(self.case, self.question, self.reasoning, self.ruling)"
+    broken = "(self.question, self.case, self.reasoning, self.ruling)"
+    if implementation.count(correct) != 1:
+        raise RuntimeError("A classe mudou; revisar o ensaio.")
 
     with tempfile.TemporaryDirectory(prefix="case-law-demo-") as directory:
-        rehearsal = Path(directory) / "test_rehearsal.py"
-        # Falha didática deliberada apenas na cópia temporária.
-        rehearsal.write_text(
-            original.replace(
-                assertion, 'assert rebuilt == "EXPECTATIVA INCORRETA DO ENSAIO"'
-            ),
-            encoding="utf-8",
-        )
+        sandbox = Path(directory)
+        shutil.copytree(backend / "app", sandbox / "app")
+        target = sandbox / "app/ementa.py"
+        target.write_text(implementation.replace(correct, broken), encoding="utf-8")
+        rehearsal = sandbox / "test_rehearsal.py"
+        rehearsal.write_text(original, encoding="utf-8")
         command = [
             sys.executable,
             "-m",
@@ -30,18 +31,24 @@ def main() -> int:
             "-c",
             str(backend / "pyproject.toml"),
             str(rehearsal),
+            "-o",
+            f"pythonpath={sandbox}",
             "-m",
             "unit",
             "-q",
         ]
-        print("ENSAIO: expectativa incorreta; esperamos três falhas.", flush=True)
+        print(
+            "ENSAIO: ordem das seções trocada na CLASSE temporária; esperamos quatro falhas.",
+            flush=True,
+        )
         failed = subprocess.run(command, cwd=backend, check=False).returncode
         if failed != 1:
             print(f"Ensaio inconclusivo: código {failed}; esperado 1.")
             return 1
 
-        rehearsal.write_text(original, encoding="utf-8")
-        print("CORREÇÃO: expectativa original restaurada na cópia.", flush=True)
+        target.write_text(implementation, encoding="utf-8")
+        shutil.rmtree(sandbox / "app/__pycache__", ignore_errors=True)
+        print("CORREÇÃO: ordem original restaurada na CLASSE temporária.", flush=True)
         corrected = subprocess.run(command, cwd=backend, check=False).returncode
         if corrected != 0:
             return corrected

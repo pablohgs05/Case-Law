@@ -1,82 +1,72 @@
-# Processo de testes do Case-Law
+# Testes unitários: processo para a equipe
 
-Escopo desta entrega: testes unitários e de integração, evidências e revisão no fork [pablohgs05/Case-Law](https://github.com/pablohgs05/Case-Law). CI e ReqTrack pertencem a outros responsáveis; este material não afirma que exista bloqueio automático de merge.
+A apresentação atual cobre **somente testes unitários**. [Comece pelo roteiro](documentation/testing/APRESENTACAO.md). [Integração posterior](documentation/testing/INTEGRACAO-POSTERIOR.md) tem ambiente e critérios separados.
 
-## Acordo validado e aplicação no código
+## Base existente e limites
 
-A anotação original está na [Wiki: Fluxo de teste unitário](https://github.com/pablohgs05/Case-Law/wiki/Fluxo-de-teste-unitario). Na planning, os devs definem critérios e classes, priorizando regra de negócio, serviço e utilitárias. O dev isola a unidade, usa Dado/Quando/Então e registra comandos/resultados na PR. Outro integrante revisa. Se houver falha, critério não atendido ou evidência ausente, devolve ao autor, que corrige, executa novamente e pede nova revisão. Conflitos de testes introduzidos na PR são responsabilidade do autor. No frontend, a unidade é o componente.
+A [anotação do professor](https://github.com/pablohgs05/Case-Law/wiki/Fluxo-de-teste-unitario) define classes de regra de negócio, serviço e utilitárias no backend; componentes no frontend. Devs definem classes e critérios na planning; autor isola, executa e registra; outro integrante revisa. O autor resolve falhas e conflitos introduzidos na própria PR.
 
-O backend atual usa funções e classes. Para demonstrar literalmente uma classe existente, esta entrega testa `StructuredEmenta.rebuild`, utilitária de `backend/app/ementa.py`. As funções existentes continuam cobertas; não foram transformadas artificialmente em classes. O enquadramento das funções no acordo deve ser confirmado na próxima planning.
+O [backlog da Sprint 1](documentation/sprints/sprint-1/sprint-1-backlog.md) inclui detalhe com ementa completa (prioridade 4) e cartão com trecho/fonte (prioridade 2). [Artefatos](documentation/sprints/Artefatos.md) registra SCRUM-18 (detalhe) e SCRUM-50 (resultados). SCRUM-20 e SCRUM-55 são referências usadas pelos testes anteriores: a correspondência entre essas tarefas técnicas e as histórias deve ser ratificada pela equipe. Não atribuímos uma sprint atual nem alteramos ReqTrack. Não há ata de planning, acordo da equipe ou revisão humana comprovados.
 
-Unitário verifica comportamento isolado; mocks não demonstram que SQL funciona. Integração verifica partes reais trabalhando juntas. Aqui o recorte demonstrado é API + consulta + PostgreSQL real. Os marcadores históricos do projeto incluem alguns testes HTTP sem banco em `unit`; uma chamada HTTP simulada sozinha não prova integração com PostgreSQL. Testes de páginas com API simulada também não provam integração real frontend/backend.
+## Planning → execução → revisão
 
-## Planning demonstrativa — proposta, não reunião realizada
+1. Na planning, devs preenchem a [ficha](documentation/testing/PLANNING-E-REVISAO.md): história existente, sprint, classe/componente, tipo, cenários e critério verificável. PO esclarece o objetivo da história. Registrar validação real e responsáveis.
+2. Autor prepara entradas e substitui dependências externas quando existirem. Aqui a classe recebe dados em memória e o componente recebe props; nenhum banco ou servidor é necessário.
+3. Autor escreve Dado/Quando/Então, executa os testes selecionados e a regressão pertinente, registra commit, ambiente, comando, contagem e log na PR do fork.
+4. Outro integrante confere critérios da planning, classificação, isolamento, cenários e evidência do commit atual. Deve conseguir repetir os comandos.
+5. Se houver falha, cenário ausente, classificação incorreta ou evidência insuficiente: **Request changes**, explicando o motivo. Autor corrige inclusive conflitos de testes que introduziu, executa novamente e registra novo commit/log.
+6. O mesmo revisor ou outro integrante distinto do autor faz nova revisão. **Approve** somente com critérios obrigatórios satisfeitos. Depois segue o processo de merge da equipe. Não há garantia de bloqueio automático; CI não foi alterada.
 
-Histórias existentes usadas como referência: SCRUM-20 (ementa estruturada) e SCRUM-55 (cartão). Não foram criados requisitos nem alterados registros no ReqTrack. A equipe ainda deve ratificar cenários, sprint, autor e revisor.
+## Recorte proposto para ratificação
 
-| Critério proposto | Unidade / classificação | Dado / Quando / Então | Teste |
+| ID | Unidade e tipo | Dado / Quando / Então | Arquivo |
 |---|---|---|---|
-| C1: reconstruir sem perda nem troca de ordem | Classe utilitária `StructuredEmenta`, método `rebuild`; unitário sem dependência externa | Dadas quatro seções e cabeçalho com vazio, acento/quebra ou espaços, quando reconstruir, então manter todos os caracteres na ordem | `backend/tests/test_scrum_ementa_bdd.py::test_rebuild_preserva_texto_e_ordem_das_secoes` (3 casos) |
-| C2: devolver todas as seções no detalhe | API `/decisions/tjdft-jurisdf/1000004` + PostgreSQL; integração | Dado fixture estruturado real, quando abrir detalhe, então HTTP 200, cinco campos preenchidos e textos presentes na ementa completa | `backend/tests/test_scrum_ementa_bdd.py::test_api_preserva_todas_as_secoes_da_ementa` |
-| C3: orientar quando não há trecho | Componente `DecisionResultCard`; unitário em jsdom, props controladas | Dado trecho vazio, espaços ou quebra de linha, quando renderizar, então mostrar “Trecho indisponível.” e identificar processo/tribunal | `frontend/src/tests/scrumCardBdd.test.tsx` (3 casos) |
+| U1 principal | `StructuredEmenta.rebuild`, classe utilitária | Dadas seções com textos distintos, quando reconstruir, então preservar cabeçalho, conteúdo e ordem exata | `backend/tests/test_scrum_ementa_bdd.py` |
+| U1 limites | Mesma classe | Dado texto vazio, acentuado com quebra ou com espaços, quando reconstruir, então não perder caracteres | mesmo arquivo, 3 casos |
+| U2 complementar | `DecisionResultCard`, componente | Dado trecho vazio, só espaços ou quebra, quando renderizar, então orientar “Trecho indisponível.” e identificar processo e tribunal | `frontend/src/tests/scrumCardBdd.test.tsx`, 3 casos |
 
-Sucesso, erro e limites adicionais já têm exemplos nas suítes existentes: `test_ementa.py` cobre ementa ausente/incompleta; `test_detail.py` cobre decisão inexistente/404; `officialLink.test.tsx` cobre fonte indisponível. A equipe escolhe na planning quais são obrigatórios por história.
+U1 representa o requisito existente de ementa sem perda. U2 é proposta para ausência de trecho e precisa de aceite dos devs; não é apresentado como critério já acordado. Esses casos não comprovam toda a história. Funções e páginas presentes nas suítes históricas não são automaticamente classes/componentes aprovados pelo professor; enquadramento pendente com os devs. BDD aqui é organização do comportamento em Pytest/Vitest, sem Cucumber obrigatório.
 
-## Executar e reunir evidências
+## Preparar uma vez
 
-Backend, a partir da raiz:
+Na raiz do projeto, PowerShell, com Python 3.12+, uv e Node/npm instalados:
 
 ```powershell
 cd backend
 uv sync --locked
-uv run pytest -m unit -v
-uv run pytest -m integration -v -rs
-uv run python scripts/demo_test_cycle.py
-```
-
-Frontend, a partir da raiz em outro terminal:
-
-```powershell
-cd frontend
+cd ../frontend
 npm ci
-npm test
-npm run typecheck
+cd ..
 ```
 
-O ensaio `demo_test_cycle.py` usa somente uma cópia temporária do teste. Introduz expectativa errada, exige código de saída 1, restaura a expectativa original e exige código 0. Mostra três falhas seguidas de três aprovações sem editar código de produção. É demonstração técnica: não constitui defeito real, devolução humana ou aprovação de PR.
+Não iniciar a aplicação ou banco para os unitários. Se uv/npm não forem encontrados, corrigir a instalação/PATH antes da aula. Neste computador o ambiente Python e dependências frontend já existem; o script abaixo também usa esses caminhos diretamente.
 
-### Integração: ambiente necessário
-
-Nesta execução faltam `TEST_DATABASE_URL`, Docker e PostgreSQL acessíveis pelos comandos locais. Os 195 testes de integração foram ignorados. Integração está **pendente**, apesar de pytest retornar código 0 em uma suíte inteiramente ignorada.
-
-Em uma máquina com Docker, usar o PostgreSQL/pgvector do compose existente e criar um banco **exclusivo para testes**. Os fixtures apagam/recriam o schema `core`; não usar banco de desenvolvimento com dados úteis nem produção.
+## Executar na aula
 
 ```powershell
-# Na raiz, se o serviço de desenvolvimento ainda não estiver iniciado:
-docker compose up -d postgres
-# Criar uma vez; ajustar usuário se a configuração local for diferente:
-docker compose exec postgres createdb -U postgres caselaw_test
-cd backend
-# Exemplo para os valores padrão do compose; adaptar localmente sem publicar segredos:
-$env:TEST_DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/caselaw_test'
-uv run pytest -m integration -v -rs
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Apresentar-Unitarios.ps1
 ```
 
-O banco deve oferecer `pg_trgm`, `unaccent` e `vector`. O fixture `prepared_database` prepara tabelas e dados automaticamente. Recusar aprovação se houver falhas, erros ou cenários obrigatórios ignorados; conferir os números, não apenas o código de saída.
+O script usa o ambiente local ou uv e procura Node no PATH; registra logs em pasta nova em `documentation/testing/evidence/unitarios/`. Interrompe se uma etapa normal falhar. Executa 4 casos da classe, 3 do componente e o ensaio de falha/correção. A falha deliberada é esperada somente dentro do ensaio.
 
-## Fluxo de revisão na PR
+Para executar manualmente:
 
-1. Devs registram história, sprint, critérios, classes/componentes, cenários e classificação na planning.
-2. Autor implementa, isola e executa os testes definidos.
-3. Autor abre PR **dentro do fork**, usando o [modelo de testes](.github/PULL_REQUEST_TEMPLATE/testes.md), com commit testado, comandos, ambiente, contagens e logs.
-4. Revisor distinto confere critérios, classificação, isolamento, cenários e evidências.
-5. Critério não atendido, falha ou evidência incompleta: revisor registra motivo e solicita alterações. Autor resolve inclusive conflitos dos testes que introduziu, executa novamente e atualiza os logs vinculados ao novo commit.
-6. Revisor confere a correção e a nova execução. Somente aprova quando os critérios obrigatórios estiverem atendidos; depois segue o processo da equipe.
+```powershell
+cd backend
+uv run pytest tests/test_scrum_ementa_bdd.py -m unit -v
+uv run python scripts/demo_test_cycle.py
+cd ../frontend
+npm test -- src/tests/scrumCardBdd.test.tsx
+```
 
-A revisão humana continua pendente nesta entrega. O autor não pode aprovar sua própria PR. O ensaio não substitui essa etapa nem a execução real da integração.
+Antes de entregar uma mudança, rodar também `uv run pytest -m unit -q` no backend e `npm test` / `npm run typecheck` no frontend. Suíte frontend inclui páginas e utilitários além de componentes; sua contagem não é apresentada como quantidade de componentes isolados.
 
-## Apresentação e registro
+## Evidência mínima e conclusão
 
-- [Roteiro de 6–8 minutos](documentation/testing/APRESENTACAO.md)
-- [Execução e bloqueios de 22/10/2026](documentation/testing/EVIDENCIAS.md)
-- [Logs](documentation/testing/evidence/)
+Usar o [template de PR](.github/PULL_REQUEST_TEMPLATE/testes.md): história/critério, unidade, cenário, motivo do isolamento, SHA do código testado, comandos e versões, aprovados/falhos/ignorados e logs. Resultado ignorado não é aprovação. Cobertura percentual não substitui cenário. Revisor registra decisão pela própria conta, com justificativa e nova revisão após correção.
+
+[Resultados atuais](documentation/testing/EXECUCAO-UNITARIA.md) · [Ficha e instruções do colega](documentation/testing/PLANNING-E-REVISAO.md). A PR #1 permanece draft, sem autoaprovação. Integração está preservada em arquivo próprio e não integra a demonstração de hoje.
+
+## Compatibilidade com DoR/DoD existentes
+
+Artefatos.md exige subtarefas estimadas que caibam em uma pessoa, critérios testáveis e dependências identificadas antes da sprint; confirmar esses campos na planning. O DoD exige review por outro membro via PR, CI verde como condição de merge e prova de que o teste quebra ao alterar o código. O ensaio cobre essa prova técnica; testes locais verdes não concluem o DoD. Estado do CI deve ser conferido pelo responsável antes do merge, sem mudar sua configuração. Defeito fora de escopo deve ser encaminhado ao responsável para card Bug vinculado, conforme o DoD existente.

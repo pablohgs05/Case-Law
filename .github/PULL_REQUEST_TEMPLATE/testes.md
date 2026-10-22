@@ -1,34 +1,34 @@
-## Planning e escopo
+## Recorte e planning
 
-- História Scrum / link e sprint:
-- Critério definido pelos devs na planning:
-- Autor e revisor (pessoas distintas):
-- Classe/método ou componente e tipo (negócio, serviço ou utilitário):
-- Classificação: unitário / integração; dependências simuladas ou reais:
-- Cenários Dado / Quando / Então (sucesso, erro e limite aplicáveis):
+- Entrega: unitários (integração em trabalho separado)
+- História/tarefa existente e sprint confirmadas:
+- Link da ratificação real dos devs (ou PENDENTE):
+- Autor / revisor distinto:
+- Classe/método e tipo (negócio/service/utilitária) ou componente:
+- Critérios e cenários Dado/Quando/Então (sucesso/erro/limite aplicáveis):
+- Isolamento e dependências substituídas:
 
 ## Execução do autor
 
-| Commit testado | Comando e ambiente | Aprovados | Falhas | Ignorados | Log |
+| SHA do código testado | Ambiente/comando | Aprovados | Falhos | Ignorados | Log |
 |---|---|---|---|---|---|
 | preencher | preencher | | | | |
 
-Ignorado não significa aprovado. Integração exige PostgreSQL de teste real.
-Não incluir credenciais nos logs. CI e ReqTrack são responsabilidades externas a esta entrega.
+Registrar ensaio deliberado separadamente; ignorado não é aprovado. Sem credenciais. Não misturar integração na evidência unitária.
 
-## Revisão humana
+## Revisão real por outro integrante
 
-- [ ] Critério e escopo conferidos com a planning
-- [ ] Unidade, isolamento/classificação e cenários conferidos
-- [ ] Evidências correspondem ao commit atual e podem ser repetidas
-- [ ] Nenhuma falha ou integração obrigatória pendente
-- Decisão e justificativa do revisor: pendente / devolver / aprovar
+- [ ] Critérios ratificados com devs na planning
+- [ ] Classe/componente, classificação, isolamento e cenários conferidos
+- [ ] Evidências do commit atual repetidas/conferidas
+- [ ] Nenhuma falha inesperada ou cenário unitário obrigatório ignorado
+- Decisão do revisor e link: PENDENTE
 
-## Devolução, correção e nova execução
+## Se houver devolução
 
-- Motivo da devolução e cenário afetado:
-- Correção pelo autor (incluindo conflito de testes introduzido na PR):
-- Novo commit, comando, resultado e log:
-- Nova decisão do revisor:
+- Motivo e critério afetado:
+- Autor corrige inclusive conflitos de testes introduzidos na PR:
+- Novo SHA, comando, resultado e log:
+- Nova decisão do revisor e link:
 
-Abrir a PR com base e head em `pablohgs05/Case-Law`. Nunca no upstream.
+Base e head em pablohgs05/Case-Law. Sem autoaprovação. CI/ReqTrack fora deste recorte.

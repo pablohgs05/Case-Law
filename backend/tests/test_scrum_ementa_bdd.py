@@ -1,10 +1,8 @@
 """SCRUM-20: proposta de cenários para ratificação na planning."""
 
 import pytest
-from fastapi.testclient import TestClient
 
 from app.ementa import Section, StructuredEmenta
-from tests.conftest import needs_database
 
 
 @pytest.mark.unit
@@ -26,20 +24,23 @@ def test_rebuild_preserva_texto_e_ordem_das_secoes(text: str) -> None:
     assert rebuilt == text + "I." + text + "II." + text + "III." + text + "IV." + text
 
 
-@needs_database
-@pytest.mark.integration
-def test_api_preserva_todas_as_secoes_da_ementa(client: TestClient) -> None:
-    # Given: API e PostgreSQL real preparados pelos fixtures do projeto.
-    # O registro 1000004 contém as quatro seções e texto maior que um snippet.
-    # When: o leitor abre a decisão completa, sem termo de destaque.
-    response = client.get("/decisions/tjdft-jurisdf/1000004")
-
-    # Then: contrato HTTP e todas as seções têm conteúdo, sem truncamento.
-    assert response.status_code == 200
-    body = response.json()
-    sections = body["sections"]
-    assert set(sections) == {"headnote", "case", "question", "reasoning", "ruling"}
-    assert all(isinstance(value, str) and value.strip() for value in sections.values())
-    assert body["summary"].startswith(sections["headnote"])
-    for name in ("case", "question", "reasoning", "ruling"):
-        assert sections[name] in body["summary"]
+@pytest.mark.unit
+def test_rebuild_preserva_secoes_distintas() -> None:
+    # Dado: textos diferentes permitem detectar perda, duplicação e troca de ordem.
+    ementa = StructuredEmenta(
+        headnote="DIREITO CIVIL.\n",
+        case=Section("I. CASO EM EXAME\n", "Pedido de reparação.\n"),
+        question=Section("II. QUESTÃO EM DISCUSSÃO\n", "Existe dano?\n"),
+        reasoning=Section("III. RAZÕES DE DECIDIR\n", "Prova insuficiente.\n"),
+        ruling=Section("IV. DISPOSITIVO\n", "Recurso negado.\n"),
+    )
+    # Quando: a classe utilitária reconstrói a ementa sem banco ou API.
+    rebuilt = ementa.rebuild()
+    # Então: comparar com texto literal independente da implementação.
+    assert rebuilt == (
+        "DIREITO CIVIL.\n"
+        "I. CASO EM EXAME\nPedido de reparação.\n"
+        "II. QUESTÃO EM DISCUSSÃO\nExiste dano?\n"
+        "III. RAZÕES DE DECIDIR\nProva insuficiente.\n"
+        "IV. DISPOSITIVO\nRecurso negado.\n"
+    )

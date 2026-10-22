@@ -1,3 +1,5 @@
+> Registro histórico da execução anterior. Para o estado atual, consultar [EXECUCAO-UNITARIA.md](EXECUCAO-UNITARIA.md). O roteiro atual é exclusivamente unitário; integração tem entrega separada.
+
 # Evidências — 22/10/2026
 
 ## Sincronização

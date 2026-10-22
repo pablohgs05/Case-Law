@@ -1,12 +1,14 @@
 # Roteiro oral concreto — 7 a 9 minutos
 
-Abrir [PR #2](https://github.com/pablohgs05/Case-Law/pull/2), [PR #3](https://github.com/pablohgs05/Case-Law/pull/3), testes focais e Wiki. Na raiz, executar o comando abaixo. Usar a branch test/unitarios-fluxo-dev; não alterar main/dev durante a aula.
+**Usar a branch `dev` atualizada do fork, após obter localmente os commits mais recentes.** Abrir [PR #2](https://github.com/pablohgs05/Case-Law/pull/2), [PR #3](https://github.com/pablohgs05/Case-Law/pull/3), testes focais e Wiki. Na raiz, executar o comando abaixo. Usar a branch test/unitarios-fluxo-dev; não alterar main/dev durante a aula.
+
+> **Estado confirmado em 22/10/2026 — fork individual:** a [PR #2](https://github.com/pablohgs05/Case-Law/pull/2) foi integrada à `dev` do fork no commit [`56a664f`](https://github.com/pablohgs05/Case-Law/commit/56a664fbac0264638af04070cbc16b9d05f7ae4a), após CI backend/frontend aprovado e verificação técnica assistida por IA registrada na PR. O autor é o único colaborador do fork. **Não houve revisão humana independente, ratificação de planning pelos devs nem aprovação do professor.** A revisão por colega permanece um requisito do processo da equipe original, demonstrado/documentado, **não uma etapa executada neste fork**. A [PR #3](https://github.com/pablohgs05/Case-Law/pull/3) é somente sandbox e não deve ser integrada. Nenhum merge em `main` ou no repositório original.
 
 ## 0:00–1:00 — entrega e fluxo
 
-“Aplicamos a demonstração unitária no fork. A contribuição está na PR #2 com destino dev, conforme o fluxo de código existente. O destino main aceita origem dev. Corrigimos o encaminhamento sem alterar o CI. A branch antiga está preservada e a PR #1 foi substituída. Ainda não integramos a contribuição: a decisão de outro integrante está pendente.”
+“Aplicamos o recorte de testes unitários no nosso fork. A PR #2 foi destinada a dev, recebeu CI aprovado e foi integrada à dev do fork em 22/10/2026, commit 56a664f. A revisão técnica foi assistida por IA e registrada; não houve segundo desenvolvedor para revisar, pois este fork é individual. O fluxo padrão da equipe prevê revisão independente, que está documentada mas não foi executada aqui.”
 
-Mostrar head/base da PR #2 e a auditoria. Não afirmar que a equipe já concordou: “Os critérios estão explícitos e os testes foram executados. A ratificação da planning está marcada como pendência porque não há registro dessa reunião.”
+Mostrar head/base da PR #2 e a auditoria. Não afirmar que a equipe já concordou: “Os critérios técnicos foram explicitados e os testes executados. A ratificação por desenvolvedores em planning não ocorreu neste fork individual e não a apresentamos como fato.”
 
 ## 1:00–2:00 — critério e Dado/Quando/Então
 
@@ -32,14 +34,14 @@ Mostrar os dois logs em evidence/fluxo. Distinguir execução local de conclusã
 
 ## 6:00–8:00 — evidência, revisão e decisão
 
-Voltar à PR #2, aba Checks e arquivos. “Aqui estão os cenários, os comandos, os commits e as evidências. O CI existente valida esta PR. Teste verde é evidência técnica; a revisão por outro integrante é uma decisão distinta.”
+Voltar à PR #2, aba Checks e arquivos. “Aqui estão cenários, comandos, commits, evidências, CI aprovado e merge da PR #2 na dev do fork. Registrei uma análise assistida por IA; em trabalho de equipe, a avaliação e aprovação por outro integrante seria uma etapa adicional, que não aconteceu neste fork individual.”
 
-Mostrar o estado real dos checks do head atual. Se colega já revisou, mostrar o link e a decisão reais; sem review, dizer: “A única passagem humana pendente é um colega validar a ficha de critérios e revisar esta PR pela própria conta. Não registrei aprovação em nome dele.”
+Mostrar o estado real dos checks do head atual. Se colega já revisou, mostrar o link e a decisão reais; sem review, dizer: “No fork individual, não houve revisão por outro dev. O registro demonstra o procedimento que o time deve seguir quando há vários integrantes, sem inventar aprovação.”
 
-“A promoção para main passa depois por dev → main, com avaliação do conjunto que estiver em dev pelo responsável. Não abrimos essa promoção nesta demonstração porque ela incluiria outras funcionalidades.”
+“Depois da integração em dev, o fluxo do projeto promove dev para main sob decisão do responsável. Não promovemos agora porque isso incluiria outras funcionalidades.”
 
 ## 8:00–9:00 — limite da entrega
 
-“Esta apresentação comprova o recorte unitário e a detecção de defeito. Integração está separada; os 195 ignorados do histórico não foram contados como aprovados. Não alegamos aceite do professor, planning ratificada ou DoD completo sem evidência humana.”
+“Esta apresentação comprova os testes unitários executados, a capacidade de detectar o defeito de sandbox e a contribuição integrada à dev do fork. Testes de integração continuam fora desta apresentação. Não houve revisão humana independente, ratificação de planning ou aceite do professor; logo não alegamos cumprimento integral do DoD da equipe original.”
 
 Se houver devolução real, mostrar o critério apontado, correção, novo commit, execução e nova revisão. Não pedir rejeição artificial para encenar o processo.

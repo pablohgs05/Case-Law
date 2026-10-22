@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -91,10 +91,15 @@ const byIdentifier =
     return found ? json(found) : json({ detail: 'Decision not found.' }, 404);
   };
 
-function renderDetail(decision: Decision) {
+async function renderDetail(decision: Decision) {
   installApi(() => json(decision));
   render(<DecisionDetail id="detail" source={decision.source} identifier={decision.identifier} />);
-  return screen.findByRole('heading', { level: 2 });
+  // The loading panel already has a level-2 heading. Wait for the response,
+  // not that heading, before assertions about the loaded decision.
+  await waitFor(() => {
+    expect(screen.getByRole('complementary')).toHaveAttribute('aria-busy', 'false');
+  });
+  return screen.getByRole('heading', { level: 2 });
 }
 
 const meta = () =>

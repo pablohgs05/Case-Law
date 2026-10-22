@@ -1,0 +1,109 @@
+ENSAIO: expectativa incorreta; esperamos tr�s falhas.
+FFF                                                                      [100%]
+================================== FAILURES ===================================
+______________ test_rebuild_preserva_texto_e_ordem_das_secoes[] _______________
+
+text = ''
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("text", ["", "A��o.\n", "  texto com espa�os  "])
+    def test_rebuild_preserva_texto_e_ordem_das_secoes(text: str) -> None:
+        # Given: classe utilit�ria isolada, sem banco, rede ou API.
+        ementa = StructuredEmenta(
+            headnote=text,
+            case=Section("I.", text),
+            question=Section("II.", text),
+            reasoning=Section("III.", text),
+            ruling=Section("IV.", text),
+        )
+    
+        # When: o m�todo da classe reconstr�i a ementa.
+        rebuilt = ementa.rebuild()
+    
+        # Then: nenhuma se��o, espa�o ou caractere � perdido ou reordenado.
+>       assert rebuilt == "EXPECTATIVA INCORRETA DO ENSAIO"
+E       AssertionError: assert 'I.II.III.IV.' == 'EXPECTATIVA ...ETA DO ENSAIO'
+E         
+E         - EXPECTATIVA INCORRETA DO ENSAIO
+E         + I.II.III.IV.
+
+C:\Users\EXPSIL20\AppData\Local\Temp\case-law-demo-o7bqgm4r\test_rehearsal.py:26: AssertionError
+________ test_rebuild_preserva_texto_e_ordem_das_secoes[A\xe7\xe3o.\n] ________
+
+text = 'A��o.\n'
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("text", ["", "A��o.\n", "  texto com espa�os  "])
+    def test_rebuild_preserva_texto_e_ordem_das_secoes(text: str) -> None:
+        # Given: classe utilit�ria isolada, sem banco, rede ou API.
+        ementa = StructuredEmenta(
+            headnote=text,
+            case=Section("I.", text),
+            question=Section("II.", text),
+            reasoning=Section("III.", text),
+            ruling=Section("IV.", text),
+        )
+    
+        # When: o m�todo da classe reconstr�i a ementa.
+        rebuilt = ementa.rebuild()
+    
+        # Then: nenhuma se��o, espa�o ou caractere � perdido ou reordenado.
+>       assert rebuilt == "EXPECTATIVA INCORRETA DO ENSAIO"
+E       AssertionError: assert 'A��o.\nI.A��....\nIV.A��o.\n' == 'EXPECTATIVA ...ETA DO ENSAIO'
+E         
+E         - EXPECTATIVA INCORRETA DO ENSAIO
+E         + A��o.
+E         + I.A��o.
+E         + II.A��o.
+E         + III.A��o.
+E         + IV.A��o.
+
+C:\Users\EXPSIL20\AppData\Local\Temp\case-law-demo-o7bqgm4r\test_rehearsal.py:26: AssertionError
+__ test_rebuild_preserva_texto_e_ordem_das_secoes[  texto com espa\xe7os  ] ___
+
+text = '  texto com espa�os  '
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("text", ["", "A��o.\n", "  texto com espa�os  "])
+    def test_rebuild_preserva_texto_e_ordem_das_secoes(text: str) -> None:
+        # Given: classe utilit�ria isolada, sem banco, rede ou API.
+        ementa = StructuredEmenta(
+            headnote=text,
+            case=Section("I.", text),
+            question=Section("II.", text),
+            reasoning=Section("III.", text),
+            ruling=Section("IV.", text),
+        )
+    
+        # When: o m�todo da classe reconstr�i a ementa.
+        rebuilt = ementa.rebuild()
+    
+        # Then: nenhuma se��o, espa�o ou caractere � perdido ou reordenado.
+>       assert rebuilt == "EXPECTATIVA INCORRETA DO ENSAIO"
+E       AssertionError: assert '  texto com ...com espa�os  ' == 'EXPECTATIVA ...ETA DO ENSAIO'
+E         
+E         - EXPECTATIVA INCORRETA DO ENSAIO
+E         +   texto com espa�os  I.  texto com espa�os  II.  texto com espa�os  III.  texto com espa�os  IV.  texto com espa�os
+
+C:\Users\EXPSIL20\AppData\Local\Temp\case-law-demo-o7bqgm4r\test_rehearsal.py:26: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\starlette\testclient.py:53
+  C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\backend\.venv\Lib\site-packages\starlette\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED ::test_rebuild_preserva_texto_e_ordem_das_secoes[] - AssertionError: a...
+FAILED ::test_rebuild_preserva_texto_e_ordem_das_secoes[A\xe7\xe3o.\n] - Asse...
+FAILED ::test_rebuild_preserva_texto_e_ordem_das_secoes[  texto com espa\xe7os  ]
+3 failed, 1 deselected, 1 warning in 0.86s
+CORRE��O: expectativa original restaurada na c�pia.
+...                                                                      [100%]
+============================== warnings summary ===============================
+.venv\Lib\site-packages\starlette\testclient.py:53
+  C:\Users\EXPSIL20\OneDrive - Gerdau\Documentos\ChatGPT\Devops - Sakaue\Case-Law\backend\.venv\Lib\site-packages\starlette\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+3 passed, 1 deselected, 1 warning in 0.70s
+Ensaio conclu�do: falhou, foi corrigido e passou; arquivos do projeto intactos.

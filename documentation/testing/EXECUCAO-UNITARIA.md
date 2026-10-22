@@ -28,9 +28,11 @@ Código da contribuição testado: d67dee134efdef4acf57727730ce7eaa03f9e4b8, cri
 
 O CI preexistente executa a suíte histórica com banco de serviço. Isso não encerra a entrega de integração separada nem converte os 195 ignorados históricos em aprovados. Não rodamos a entrega própria de integração nesta fase.
 
-## Pendências humanas
+> **Estado confirmado em 22/10/2026 — fork individual:** a [PR #2](https://github.com/pablohgs05/Case-Law/pull/2) foi integrada à `dev` do fork no commit [`56a664f`](https://github.com/pablohgs05/Case-Law/commit/56a664fbac0264638af04070cbc16b9d05f7ae4a), após CI backend/frontend aprovado e verificação técnica assistida por IA registrada na PR. O autor é o único colaborador do fork. **Não houve revisão humana independente, ratificação de planning pelos devs nem aprovação do professor.** A revisão por colega permanece um requisito do processo da equipe original, demonstrado/documentado, **não uma etapa executada neste fork**. A [PR #3](https://github.com/pablohgs05/Case-Law/pull/3) é somente sandbox e não deve ser integrada. Nenhum merge em `main` ou no repositório original.
 
-Ratificação dos critérios/vínculos da planning e review por colega na própria conta: pendentes. Sem review, sem decisão de merge e sem DoD completo. main/dev, workflows, proteção, ReqTrack e código dos colegas preservados.
+## Pendências humanas (não realizadas no fork individual)
+
+Ratificação dos critérios/vínculos da planning e review por colega na própria conta: pendentes. Sem review humano independente nem DoD completo do time original; a PR #2 foi integrada exclusivamente à dev do fork com autorização do proprietário e CI aprovado. A main, workflows, proteção, ReqTrack e código dos colegas preservados.
 
 ## Wiki publicada e verificação posterior
 

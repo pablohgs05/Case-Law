@@ -60,7 +60,7 @@ class StructuredEmenta:
     def rebuild(self) -> str:
         """The original text, exactly. What the split must never change."""
         parts = [self.headnote]
-        for section in (self.question, self.case, self.reasoning, self.ruling):
+        for section in (self.case, self.question, self.reasoning, self.ruling):
             parts.append(section.label)
             parts.append(section.text)
         return "".join(parts)

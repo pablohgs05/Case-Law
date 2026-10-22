@@ -1,0 +1,10 @@
+
+ RUN  v2.1.9 C:/Users/EXPSIL20/OneDrive - Gerdau/Documentos/ChatGPT/Devops - Sakaue/Case-Law/frontend
+
+ ✓ src/tests/scrumCardBdd.test.tsx (3 tests) 135ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  14:46:08
+   Duration  8.85s (transform 154ms, setup 273ms, collect 5.62s, tests 135ms, environment 799ms, prepare 119ms)
+

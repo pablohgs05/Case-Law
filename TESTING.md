@@ -1,8 +1,10 @@
 # Testes unitários aplicados no fork
 
-Entrega de código: [PR #2 → dev](https://github.com/pablohgs05/Case-Law/pull/2). Ensaio isolado: [PR #3](https://github.com/pablohgs05/Case-Law/pull/3). A PR #1 foi substituída porque seu head herdava alterações de main que não pertencem a esta contribuição.
+Entrega de código integrada no fork: [PR #2 → dev](https://github.com/pablohgs05/Case-Law/pull/2). Ensaio isolado: [PR #3](https://github.com/pablohgs05/Case-Law/pull/3). A PR #1 foi substituída porque seu head herdava alterações de main que não pertencem a esta contribuição.
 
 Fluxo confirmado nos workflows e no histórico: contribuição → dev → main. O guard só atua em PRs para main/producao; para dev, não deve aparecer como falho nem precisa ser removido. O CI existente executa em toda PR. Promoção dev → main depende da revisão real e da decisão do responsável; não foi aberta porque incluiria outras funcionalidades ainda em dev.
+
+> **Estado confirmado em 22/10/2026 — fork individual:** a [PR #2](https://github.com/pablohgs05/Case-Law/pull/2) foi integrada à `dev` do fork no commit [`56a664f`](https://github.com/pablohgs05/Case-Law/commit/56a664fbac0264638af04070cbc16b9d05f7ae4a), após CI backend/frontend aprovado e verificação técnica assistida por IA registrada na PR. O autor é o único colaborador do fork. **Não houve revisão humana independente, ratificação de planning pelos devs nem aprovação do professor.** A revisão por colega permanece um requisito do processo da equipe original, demonstrado/documentado, **não uma etapa executada neste fork**. A [PR #3](https://github.com/pablohgs05/Case-Law/pull/3) é somente sandbox e não deve ser integrada. Nenhum merge em `main` ou no repositório original.
 
 ## Critérios e execução
 
@@ -10,7 +12,7 @@ U1: classe utilitária StructuredEmenta.rebuild. Dadas seções distintas, quand
 
 U2: componente DecisionResultCard. Dado trecho vazio, em branco ou com quebra, quando renderizar, então exibir “Trecho indisponível.” e manter processo/tribunal. Três testes com props controladas no jsdom. O campo deliberation foi acrescentado apenas ao fixture para respeitar o contrato atual de dev.
 
-São critérios técnicos explicitados pelo autor e implementados. Ratificação dos devs na planning e vínculos SCRUM-18/20 e SCRUM-50/55 ainda não comprovados. Não houve aceite do professor ou review humano fabricado.
+São critérios técnicos explicitados pelo autor e implementados. Ratificação dos devs na planning e vínculos SCRUM-18/20 e SCRUM-50/55 ainda não comprovados; a integração técnica no fork individual não equivale ao DoD completo do processo original. Não houve aceite do professor ou review humano fabricado.
 
 Neste computador, na raiz:
 

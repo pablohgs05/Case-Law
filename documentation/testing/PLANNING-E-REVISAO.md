@@ -1,8 +1,10 @@
 # Ficha de planning e revisão — preencher com a equipe
 
-Status inicial: **proposta; ratificação e revisão humana pendentes**. Este arquivo facilita o registro e não comprova uma reunião. Não mudar ReqTrack sem o responsável. O backlog já prioriza resultados com trecho e detalhe completo; confirmar vínculos SCRUM-18/20 e SCRUM-50/55 antes de registrar como tarefas acordadas.
+Status do processo da equipe: **critérios propostos; ratificação e revisão humana independentes não realizadas neste fork individual**. A PR #2 já foi integrada tecnicamente à `dev` do fork em 22/10/2026 com CI aprovado e checagem assistida por IA. Este arquivo facilita o registro e não comprova uma reunião. Não mudar ReqTrack sem o responsável. O backlog já prioriza resultados com trecho e detalhe completo; confirmar vínculos SCRUM-18/20 e SCRUM-50/55 antes de registrar como tarefas acordadas.
 
-## Registro humano a concluir (devs)
+> **Estado confirmado em 22/10/2026 — fork individual:** a [PR #2](https://github.com/pablohgs05/Case-Law/pull/2) foi integrada à `dev` do fork no commit [`56a664f`](https://github.com/pablohgs05/Case-Law/commit/56a664fbac0264638af04070cbc16b9d05f7ae4a), após CI backend/frontend aprovado e verificação técnica assistida por IA registrada na PR. O autor é o único colaborador do fork. **Não houve revisão humana independente, ratificação de planning pelos devs nem aprovação do professor.** A revisão por colega permanece um requisito do processo da equipe original, demonstrado/documentado, **não uma etapa executada neste fork**. A [PR #3](https://github.com/pablohgs05/Case-Law/pull/3) é somente sandbox e não deve ser integrada. Nenhum merge em `main` ou no repositório original.
+
+## Registro esperado em um desenvolvimento de equipe (modelo)
 
 - Data e link/ata real: pendente
 - História e tarefa técnica existentes: pendente de confirmação
@@ -48,6 +50,6 @@ Integração tem ficha/aceite próprios na entrega posterior. Não condicionar a
 
 Antes do merge, conferir também CI verde no head atual conforme DoD do time. CI não alterado; conferir a aba Checks da PR #2.
 
-## Ação mínima do colega
+## Quando a equipe original aplicar este modelo
 
-Abrir https://github.com/pablohgs05/Case-Law/pull/2 pela própria conta, validar os critérios e vínculos da ficha com os devs e registrar review do commit atual. Se critérios não estiverem ratificados, registrar essa pendência em vez de aprovar. Não realizar merge enquanto os itens obrigatórios estiverem abertos.
+Em futuros trabalhos **com vários desenvolvedores**, o colega poderá usar uma nova PR de contribuição para validar os critérios e vínculos da ficha e registrar review por conta distinta antes do merge. A PR #2 do **fork pessoal** já foi integrada, com checagem técnica de IA registrada, sem se passar por aprovação de equipe. Não retroagir aprovação inventada nem alterar o histórico para simular processo.

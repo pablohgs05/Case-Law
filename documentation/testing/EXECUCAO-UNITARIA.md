@@ -31,3 +31,9 @@ O CI preexistente executa a suíte histórica com banco de serviço. Isso não e
 ## Pendências humanas
 
 Ratificação dos critérios/vínculos da planning e review por colega na própria conta: pendentes. Sem review, sem decisão de merge e sem DoD completo. main/dev, workflows, proteção, ReqTrack e código dos colegas preservados.
+
+## Wiki publicada e verificação posterior
+
+Wiki sincronizada no fork em d9501e647310294668ebb6abd2da80ae51d6ff47, com push confirmado e ls-remote conferido. A anotação Fluxo-de-teste-unitario.md não sofreu alteração. Cópias publicadas em wiki-preparada/. Nenhuma ação manual de Wiki é necessária nesta execução.
+
+CI documental c825b97: [success](https://github.com/pablohgs05/Case-Law/actions/runs/39825276481). Sandbox final 045783a: [success](https://github.com/pablohgs05/Case-Law/actions/runs/39825386342). Nova publicação documental exige conferir o head mais recente na aba Checks.

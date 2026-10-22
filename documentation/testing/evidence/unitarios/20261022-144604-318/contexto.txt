@@ -1,0 +1,4 @@
+Data local: 2026-10-22T14:46:04.7342073-03:00
+Commit base: c825b97ad69fb32a92610d4a9e637589c4725a17
+Alterações locais (se houver):
+?? documentation/testing/wiki-preparada/

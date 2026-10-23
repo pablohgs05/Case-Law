@@ -4,6 +4,8 @@ Esta Wiki reúne o padrão de testes por responsabilidade e os exemplos técnico
 
 ## Testes de integração — padrão para validar com o professor
 
+- **[🧭 GUIA VISUAL — abrir para apresentar ao professor](https://github.com/pablohgs05/Case-Law/blob/dev/documentation/testing/wiki-preparada/Guia-visual-integracao.md)** — fluxogramas, exemplos backend/frontend, critérios BDD e fala pronta.
+
 - **[Padrão de testes de integração](Padrao-de-testes-de-integracao)** — fluxo em quatro etapas, definição da integração, critérios BDD, backend e frontend, roteiro de fala e perguntas.
 - **Backend:** API FastAPI + PostgreSQL real de teste; filtro por STJ retorna duas decisões corretas.
 - **Frontend:** tela React + lógica de pesquisa/paginação com resposta de API simulada; 45 resultados e seis cartões na primeira página.

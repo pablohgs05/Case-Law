@@ -51,19 +51,21 @@ function blockFor(params: SearchParams): Promise<SearchDecisionResponse> {
     return Promise.resolve(known);
   }
 
+  // Identity matters: resetting the same cut invalidates older responses too.
+  const requestedBuffer = held;
   const pending = searchDecisions({ ...params, page: block, page_size: BLOCK_SIZE });
-  held.pending.set(block, pending);
+  requestedBuffer.pending.set(block, pending);
 
   return pending.then(
     (response) => {
-      if (held.cut === cut) {
+      if (held === requestedBuffer) {
         held.ready.set(block, response);
         held.pending.delete(block);
       }
       return response;
     },
     (failure) => {
-      if (held.cut === cut) {
+      if (held === requestedBuffer) {
         held.pending.delete(block);
       }
       throw failure;

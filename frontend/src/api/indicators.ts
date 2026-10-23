@@ -176,7 +176,15 @@ export async function getCoverage(options: { signal?: AbortSignal } = {}): Promi
 // turning a page or re-sorting can never change a count.
 export type VolumeParams = Pick<
   SearchParams,
-  'q' | 'tribunal' | 'date_from' | 'date_to' | 'published_from' | 'published_to'
+  | 'q'
+  | 'tribunal'
+  | 'orgao_julgador'
+  | 'relator'
+  | 'classe_cnj'
+  | 'date_from'
+  | 'date_to'
+  | 'published_from'
+  | 'published_to'
 >;
 
 // The cut as the indicators take it, the same for every one of them.
@@ -184,8 +192,10 @@ function cutUrl(path: string, params: VolumeParams): URL {
   const url = new URL(`${apiBaseUrl}${path}`, window.location.origin);
   url.searchParams.set('q', params.q);
 
-  for (const court of params.tribunal ?? []) {
-    url.searchParams.append('tribunal', court);
+  for (const name of ['tribunal', 'orgao_julgador', 'relator', 'classe_cnj'] as const) {
+    for (const value of params[name] ?? []) {
+      url.searchParams.append(name, String(value));
+    }
   }
 
   for (const name of ['date_from', 'date_to', 'published_from', 'published_to'] as const) {

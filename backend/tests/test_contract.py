@@ -323,12 +323,25 @@ def test_the_search_documents_every_filter(client: TestClient) -> None:
     search = client.get("/openapi.json").json()["paths"]["/decisions"]["get"]
     parameters = {parameter["name"]: parameter for parameter in search["parameters"]}
 
-    filters = ("tribunal", "date_from", "date_to", "published_from", "published_to")
+    filters = (
+        "tribunal",
+        "orgao_julgador",
+        "relator",
+        "classe_cnj",
+        "date_from",
+        "date_to",
+        "published_from",
+        "published_to",
+    )
     dates = ("date_from", "date_to", "published_from", "published_to")
 
     assert set(filters) <= set(parameters)
     assert not any(parameters[name]["required"] for name in filters)
-    assert parameters["tribunal"]["schema"]["anyOf"][0]["type"] == "array"
+    for name in ("tribunal", "orgao_julgador", "relator"):
+        assert any(
+            variant.get("type") == "array"
+            for variant in parameters[name]["schema"]["anyOf"]
+        )
     for name in dates:
         assert parameters[name]["schema"]["anyOf"][0]["format"] == "date", name
 

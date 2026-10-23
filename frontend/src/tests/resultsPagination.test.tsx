@@ -88,6 +88,9 @@ function installApi(total: number, answer?: Answer) {
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input));
+      if (url.pathname === '/filters') {
+        return json({ judging_bodies: [], reporting_judges: [], procedural_classes: [] });
+      }
       if (url.pathname === '/courts') {
         return json({ courts: COURTS });
       }

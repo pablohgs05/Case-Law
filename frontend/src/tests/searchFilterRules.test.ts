@@ -43,12 +43,31 @@ describe('a date range', () => {
 });
 
 describe('the parameters sent to the search', () => {
+  it('preserves all selected option values and CNJ codes', () => {
+    const values = {
+      ...NO_FILTERS,
+      judgingBodies: [' CORTE ESPECIAL ', 'PRIMEIRA TURMA'],
+      reportingJudges: ['RELATOR A', 'RELATOR B'],
+      proceduralClasses: [198, 213],
+    };
+    expect(toSearchParams('dano moral', values)).toMatchObject({
+      orgao_julgador: values.judgingBodies,
+      relator: values.reportingJudges,
+      classe_cnj: values.proceduralClasses,
+      page: 1,
+    });
+    expect(rangeErrors(values)).toEqual({});
+  });
+
   it('leave every empty filter out', () => {
     expect(toSearchParams('dano moral', NO_FILTERS)).toEqual({
       q: 'dano moral',
       page: 1,
       page_size: PAGE_SIZE,
       tribunal: undefined,
+      orgao_julgador: undefined,
+      relator: undefined,
+      classe_cnj: undefined,
       date_from: undefined,
       date_to: undefined,
       published_from: undefined,
@@ -58,6 +77,7 @@ describe('the parameters sent to the search', () => {
 
   it('carry the courts and the days exactly as chosen', () => {
     const params = toSearchParams('dano moral', {
+      ...NO_FILTERS,
       courts: ['TJDFT', 'STJ'],
       dateFrom: '2026-01-01',
       dateTo: '2026-03-31',
@@ -78,6 +98,20 @@ describe('the parameters sent to the search', () => {
 });
 
 describe('the applied-filter count', () => {
+  it('counts each new selected value alongside courts and periods', () => {
+    expect(
+      countFilters({
+        ...NO_FILTERS,
+        courts: ['STJ'],
+        judgingBodies: ['CORTE ESPECIAL', 'PRIMEIRA TURMA'],
+        reportingJudges: ['RELATOR A', 'RELATOR B'],
+        proceduralClasses: [198, 213],
+        dateFrom: '2026-01-01',
+        publishedTo: '2026-12-31',
+      }),
+    ).toBe(9);
+  });
+
   it('counts each court and each period with at least one end', () => {
     expect(countFilters(NO_FILTERS)).toBe(0);
     expect(countFilters({ ...NO_FILTERS, courts: ['TJDFT', 'STJ'], dateTo: '2026-03-31' })).toBe(3);
@@ -85,6 +119,42 @@ describe('the applied-filter count', () => {
 });
 
 describe('comparing filters', () => {
+  it.each([
+    { judgingBodies: ['CORTE ESPECIAL'] },
+    { reportingJudges: ['RELATOR A'] },
+    { proceduralClasses: [198] },
+  ])('notices a changed selection %o', (selection) => {
+    expect(sameFilters(NO_FILTERS, { ...NO_FILTERS, ...selection })).toBe(false);
+  });
+
+  it('notices replacing only the reporting judge', () => {
+    expect(
+      sameFilters(
+        { ...NO_FILTERS, reportingJudges: ['RELATOR A'] },
+        { ...NO_FILTERS, reportingJudges: ['RELATOR B'] },
+      ),
+    ).toBe(false);
+  });
+
+  it('ignores selection order without mutating the lists', () => {
+    const a = {
+      ...NO_FILTERS,
+      judgingBodies: ['TURMA B', 'TURMA A'],
+      reportingJudges: ['RELATOR B', 'RELATOR A'],
+      proceduralClasses: [213, 198],
+    };
+    const before = structuredClone(a);
+    expect(
+      sameFilters(a, {
+        ...NO_FILTERS,
+        judgingBodies: ['TURMA A', 'TURMA B'],
+        reportingJudges: ['RELATOR A', 'RELATOR B'],
+        proceduralClasses: [198, 213],
+      }),
+    ).toBe(true);
+    expect(a).toEqual(before);
+  });
+
   it('ignores the order courts were picked in', () => {
     expect(
       sameFilters(

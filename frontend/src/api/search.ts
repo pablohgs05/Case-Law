@@ -44,6 +44,11 @@ export type SearchParams = {
   // Court abbreviations. Sent as one `tribunal` per court, which the API reads
   // as "any of these".
   tribunal?: string[];
+  // Exact option values and numeric CNJ codes. Repeated values combine with OR.
+  orgao_julgador?: string[];
+  relator?: string[];
+  classe_cnj?: number[];
+  resultado?: string[];
   // `YYYY-MM-DD`, passed through untouched.
   date_from?: string;
   date_to?: string;
@@ -76,7 +81,10 @@ export async function readDetail(response: Response): Promise<string | null> {
   }
 }
 
-export async function searchDecisions(params: SearchParams): Promise<SearchDecisionResponse> {
+export async function searchDecisions(
+  params: SearchParams,
+  options: { signal?: AbortSignal } = {},
+): Promise<SearchDecisionResponse> {
   assertApiConfiguration();
 
   const url = new URL(`${apiBaseUrl}/decisions`, window.location.origin);
@@ -90,8 +98,16 @@ export async function searchDecisions(params: SearchParams): Promise<SearchDecis
     url.searchParams.set('page_size', String(params.page_size));
   }
 
-  for (const court of params.tribunal ?? []) {
-    url.searchParams.append('tribunal', court);
+  for (const name of [
+    'tribunal',
+    'orgao_julgador',
+    'relator',
+    'classe_cnj',
+    'resultado',
+  ] as const) {
+    for (const value of params[name] ?? []) {
+      url.searchParams.append(name, String(value));
+    }
   }
 
   for (const name of ['date_from', 'date_to', 'published_from', 'published_to'] as const) {
@@ -107,6 +123,7 @@ export async function searchDecisions(params: SearchParams): Promise<SearchDecis
 
   const response = await fetch(url.toString(), {
     method: 'GET',
+    signal: options.signal,
     headers: {
       Accept: 'application/json',
     },

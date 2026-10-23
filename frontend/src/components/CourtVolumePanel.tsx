@@ -1,4 +1,4 @@
-import { Info } from '@phosphor-icons/react';
+import { ArrowRight, Info } from '@phosphor-icons/react';
 
 import CourtVolumeChart from './CourtVolumeChart';
 import { formatCount, formatDateTime, NOT_INFORMED, UNAVAILABLE } from './coverageFormat';
@@ -79,9 +79,19 @@ type CourtVolumePanelProps = {
   volume: VolumeState;
   lastUpdate: LastUpdateState;
   onRetry: () => void;
+  onSelectCourt?: (court: string, count: number) => void;
+  selectionDisabled?: boolean;
+  compact?: boolean;
 };
 
-function CourtVolumePanel({ volume, lastUpdate, onRetry }: CourtVolumePanelProps) {
+function CourtVolumePanel({
+  volume,
+  lastUpdate,
+  onRetry,
+  onSelectCourt,
+  selectionDisabled,
+  compact = false,
+}: CourtVolumePanelProps) {
   const loading = volume.status === 'loading';
   const message = messages(volume);
   // Ranked once, so the bars and the list can never disagree on the order.
@@ -89,10 +99,11 @@ function CourtVolumePanel({ volume, lastUpdate, onRetry }: CourtVolumePanelProps
   // The API's own total: never summed or adjusted here to match anything else.
   const total = volume.status === 'loaded' ? volume.volume.total : null;
   const updated = lastUpdateText(lastUpdate);
+  const Explanation = compact ? 'details' : 'div';
 
   return (
     <section className="panorama" aria-labelledby="panorama-title">
-      <header className="panorama__header">
+      <header className="panorama__header" hidden={compact}>
         <div>
           <p className="panorama__eyebrow">Indicador explicável</p>
           <h2 id="panorama-title" className="panorama__title">
@@ -129,7 +140,13 @@ function CourtVolumePanel({ volume, lastUpdate, onRetry }: CourtVolumePanelProps
             ) : (
               message && <p className="panorama-card__message">{message.chart}</p>
             )}
-            {courts && <CourtVolumeChart courts={courts} />}
+            {courts && (
+              <CourtVolumeChart
+                courts={courts}
+                onSelect={compact ? onSelectCourt : undefined}
+                disabled={loading || selectionDisabled}
+              />
+            )}
           </div>
 
           <footer className="volume-card__footer">
@@ -150,70 +167,98 @@ function CourtVolumePanel({ volume, lastUpdate, onRetry }: CourtVolumePanelProps
           </footer>
         </article>
 
-        <article
-          className="panorama-card panorama-card--composition"
-          aria-labelledby="composition-title"
-          aria-busy={loading}
-        >
-          <header className="panorama-card__header">
-            <h3 id="composition-title" className="panorama-card__title">
-              Composição do recorte
-            </h3>
-            {total !== null && (
-              <p className="panorama-card__meta">{plural(total, 'documento', 'documentos')}</p>
+        {!compact && (
+          <article
+            className="panorama-card panorama-card--composition"
+            aria-labelledby="composition-title"
+            aria-busy={loading}
+          >
+            <header className="panorama-card__header">
+              <h3 id="composition-title" className="panorama-card__title">
+                Composição do recorte
+              </h3>
+              {total !== null && (
+                <p className="panorama-card__meta">{plural(total, 'documento', 'documentos')}</p>
+              )}
+            </header>
+
+            {loading && (
+              <ul className="composition__list" aria-hidden="true">
+                {[1, 2, 3].map((n) => (
+                  <li key={n} className="composition__item composition__item--pending">
+                    <span className="volume-skeleton__line" />
+                  </li>
+                ))}
+              </ul>
             )}
-          </header>
 
-          {loading && (
-            <ul className="composition__list" aria-hidden="true">
-              {[1, 2, 3].map((n) => (
-                <li key={n} className="composition__item composition__item--pending">
-                  <span className="volume-skeleton__line" />
-                </li>
-              ))}
-            </ul>
-          )}
+            {message && <p className="panorama-card__message">{message.list}</p>}
 
-          {message && <p className="panorama-card__message">{message.list}</p>}
-
-          {/* The same courts, counts and order the chart is drawn from, as text. */}
-          {courts && (
-            <ol className="composition__list">
-              {courts.map((court, index) => (
-                <li key={court.abbreviation} className="composition__item">
-                  <span className="composition__rank" aria-hidden="true">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  <span className="composition__court">
-                    <strong className="composition__abbreviation">{court.abbreviation}</strong>
-                    {court.name && <span className="composition__name">{court.name}</span>}
-                  </span>
-                  {court.decisions === null ? (
-                    <span className="composition__count is-missing">{NOT_INFORMED}</span>
-                  ) : (
-                    <span className="composition__count">
-                      {formatCount(court.decisions)}
-                      <span className="sr-only">
-                        {court.decisions === 1 ? ' decisão' : ' decisões'}
+            {/* The same courts, counts and order the chart is drawn from, as text. */}
+            {courts && (
+              <ol className="composition__list">
+                {courts.map((court, index) => (
+                  <li key={court.abbreviation} className="composition__item">
+                    <button
+                      type="button"
+                      className="indicator-target indicator-target--court"
+                      disabled={
+                        loading || selectionDisabled || court.decisions === null || !onSelectCourt
+                      }
+                      onClick={() =>
+                        court.decisions !== null &&
+                        onSelectCourt?.(court.abbreviation, court.decisions)
+                      }
+                      aria-label={`Consultar documentos de ${court.abbreviation}: ${formatCount(court.decisions) ?? 'quantidade não informada'} decisões`}
+                    >
+                      <span className="composition__rank" aria-hidden="true">
+                        {String(index + 1).padStart(2, '0')}
                       </span>
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ol>
-          )}
+                      <span className="composition__court">
+                        <strong className="composition__abbreviation">{court.abbreviation}</strong>
+                        {court.name && <span className="composition__name">{court.name}</span>}
+                      </span>
+                      {court.decisions === null ? (
+                        <span className="composition__count is-missing">{NOT_INFORMED}</span>
+                      ) : (
+                        <span className="composition__count">
+                          {formatCount(court.decisions)}
+                          <span className="sr-only">
+                            {court.decisions === 1 ? ' decisão' : ' decisões'}
+                          </span>
+                        </span>
+                      )}
+                      {compact && (
+                        <ArrowRight
+                          className="indicator-target__arrow"
+                          size={16}
+                          aria-hidden="true"
+                        />
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            )}
 
-          {/* The rule the endpoint applies, and only that: a count in the
+            {/* The rule the endpoint applies, and only that: a count in the
               database of the decisions the search's own narrowing matches.
               Decisions under seal never enter the base. */}
-          <div className="composition__explain">
-            <h4 className="composition__explain-title">Como este número é formado?</h4>
-            <p className="composition__explain-text">
-              Contagem de decisões públicas únicas que atendem ao recorte, agrupadas por tribunal.
-              Decisões em segredo de justiça não entram na base e não integram o cálculo.
-            </p>
-          </div>
-        </article>
+            <Explanation className="composition__explain">
+              {compact ? (
+                <summary>
+                  <Info size={14} aria-hidden="true" /> Como este número é formado?
+                </summary>
+              ) : (
+                <h4 className="composition__explain-title">Como este número é formado?</h4>
+              )}
+              <p className="composition__explain-text">
+                Contagem de decisões públicas únicas que atendem ao recorte, agrupadas por tribunal.
+                Decisões em segredo de justiça não entram na base e não integram o cálculo.
+              </p>
+            </Explanation>
+          </article>
+        )}
       </div>
     </section>
   );

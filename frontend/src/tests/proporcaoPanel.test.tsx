@@ -131,6 +131,7 @@ async function search(user: ReturnType<typeof userEvent.setup>, expression: stri
 
 async function openPanorama(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('tab', { name: 'Panorama' }));
+  await user.click(screen.getByRole('button', { name: 'Como os recursos foram julgados' }));
   await screen.findByRole('article', { name: 'Resultado dos recursos' });
 }
 
@@ -286,6 +287,7 @@ describe('the panel and the results agree on the same cut', () => {
     expect(total).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Panorama' }));
+    await user.click(screen.getByRole('button', { name: 'Como os recursos foram julgados' }));
 
     expect(await screen.findByRole('button', { name: 'Tentar novamente' })).toBeInTheDocument();
   });

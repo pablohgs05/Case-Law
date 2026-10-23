@@ -116,18 +116,20 @@ def test_a_publication_older_than_the_code_answers_503(client_failing_with) -> N
         (UndefinedTable('relation "core.tribunal" does not exist'), NOT_PUBLISHED),
         (psycopg.errors.UndefinedColumn('column "nome" does not exist'), OUT_OF_DATE),
         (psycopg.OperationalError("connection refused"), UNAVAILABLE),
+        (PoolTimeout("no connection available"), UNAVAILABLE),
     ],
 )
-def test_the_court_list_never_answers_a_failure_as_an_empty_list(
-    client_failing_with, error: Exception, detail: str
+@pytest.mark.parametrize("path", ["/courts", "/filters"])
+def test_option_lists_never_answer_a_failure_as_empty(
+    client_failing_with, error: Exception, detail: str, path: str
 ) -> None:
     """
-    An empty list means no court has a decision yet. A screen would read a
-    failure presented that way as a collection with nothing in it.
+    Empty options mean a successful query found no values. A failure must stay
+    an error so the screen does not mistake it for an empty collection.
     """
     client = client_failing_with(error)
 
-    response = client.get("/courts")
+    response = client.get(path)
 
     assert response.status_code == 503
     assert response.json() == {"detail": detail}

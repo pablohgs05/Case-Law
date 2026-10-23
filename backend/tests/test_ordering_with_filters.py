@@ -122,3 +122,66 @@ def test_the_sequence_survives_being_paged_under_a_filter(
 
     assert walked == whole
     assert len(walked) == len(set(walked))
+
+
+@pytest.mark.parametrize("order", ["relevance", "date"])
+@pytest.mark.parametrize(
+    ("filters", "total"),
+    [
+        ({"orgao_julgador": "ÓRGÃO A"}, 6),
+        ({"relator": "RELATOR A"}, 4),
+        ({"classe_cnj": 198}, 4),
+        ({"orgao_julgador": "ÓRGÃO A", "relator": "RELATOR A"}, 3),
+        ({"orgao_julgador": "ÓRGÃO A", "classe_cnj": 198}, 4),
+        ({"relator": "RELATOR A", "classe_cnj": 198}, 2),
+        ({"orgao_julgador": "ÓRGÃO A", "relator": "RELATOR A", "classe_cnj": 198}, 2),
+    ],
+)
+def test_new_filters_preserve_tied_order_and_page_every_unique_decision_once(
+    client: TestClient,
+    db_rolled_back: psycopg.Connection[DictRow],
+    order: str,
+    filters: dict[str, Any],
+    total: int,
+) -> None:
+    # Same rank and date, with identifiers shared by two sources: only the
+    # complete unique key can prevent gaps and duplicates at page boundaries.
+    db_rolled_back.execute("DELETE FROM core.decisao")
+    db_rolled_back.execute("""
+        INSERT INTO core.decisao (
+            fonte_codigo, identificador_fonte, tribunal_sigla, data_referencia,
+            orgao_julgador, relator, classe_cnj, ementa, turma_recursal,
+            possui_inteiro_teor, url_fonte, ementa_busca
+        )
+        SELECT CASE WHEN g % 2 = 0 THEN 'source-a' ELSE 'source-b' END,
+               (g / 2)::text, 'STJ', '2026-03-10'::date,
+               CASE WHEN g < 6 THEN 'ÓRGÃO A' ELSE 'ÓRGÃO B' END,
+               CASE WHEN g % 2 = 0 THEN 'RELATOR A' ELSE 'RELATOR B' END,
+               CASE WHEN g < 4 THEN 198 ELSE 213 END,
+               'Dano moral.', FALSE, FALSE, 'https://example.com/' || g,
+               TO_TSVECTOR('portugues_sem_acento', 'Dano moral.')
+        FROM generate_series(0, 7) AS g
+    """)
+    whole = page(client, order=order, **filters)
+    keys = [(row["source"], row["identifier"]) for row in whole]
+    assert len(keys) == total
+    assert keys == sorted(keys, reverse=True)
+    assert page(client, order=order, **filters) == whole
+    walked: list[tuple[str, str]] = []
+    for number in range(1, total + 2):
+        response = client.get(
+            "/decisions",
+            params={
+                "q": TERM,
+                "order": order,
+                "page_size": 1,
+                "page": number,
+                **filters,
+            },
+        )
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["total"] == total
+        walked.extend((row["source"], row["identifier"]) for row in body["results"])
+    assert walked == keys
+    assert len(set(walked)) == total

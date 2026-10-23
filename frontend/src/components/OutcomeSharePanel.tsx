@@ -44,17 +44,27 @@ function Skeleton() {
 type OutcomeSharePanelProps = {
   outcome: OutcomeState;
   onRetry: () => void;
+  onSelectOutcome?: (outcome: string, count: number) => void;
+  selectionDisabled?: boolean;
+  compact?: boolean;
 };
 
-function OutcomeSharePanel({ outcome, onRetry }: OutcomeSharePanelProps) {
+function OutcomeSharePanel({
+  outcome,
+  onRetry,
+  onSelectOutcome,
+  selectionDisabled,
+  compact = false,
+}: OutcomeSharePanelProps) {
   const loading = outcome.status === 'loading';
   const note = message(outcome);
   const share = outcome.status === 'loaded' ? outcome.outcome : null;
   const rows = share && !note ? rankOutcomes(share.outcomes) : null;
+  const Explanation = compact ? 'details' : 'div';
 
   return (
     <section className="panorama" aria-labelledby="outcome-title">
-      <header className="panorama__header">
+      <header className="panorama__header" hidden={compact}>
         <div>
           <p className="panorama__eyebrow">Indicador explicável </p>
           <h2 id="outcome-title" className="panorama__title">
@@ -67,11 +77,19 @@ function OutcomeSharePanel({ outcome, onRetry }: OutcomeSharePanelProps) {
       </header>
 
       <div className="panorama__grid">
-        <article className="panorama-card" aria-labelledby="outcome-card-title" aria-busy={loading}>
+        <article
+          className="panorama-card"
+          aria-labelledby={compact ? undefined : 'outcome-card-title'}
+          aria-label={compact ? 'Resultado dos recursos' : undefined}
+          aria-busy={loading}
+        >
           <header className="panorama-card__header">
-            <h3 id="outcome-card-title" className="panorama-card__title">
-              Resultado dos recursos
-            </h3>
+            <div>
+              {compact && <p className="panorama__eyebrow">Resultado dos recursos</p>}
+              <h3 id="outcome-card-title" className="panorama-card__title">
+                {compact ? 'Provimento no recorte pesquisado' : 'Resultado dos recursos'}
+              </h3>
+            </div>
             {share?.total !== null && share?.total !== undefined && (
               <p className="panorama-card__meta">
                 {plural(share.total, 'decisão no recorte', 'decisões no recorte')}
@@ -104,25 +122,44 @@ function OutcomeSharePanel({ outcome, onRetry }: OutcomeSharePanelProps) {
               note && <p className="panorama-card__message">{note}</p>
             )}
 
-            {rows && <OutcomeShareChart outcomes={rows} />}
-
             {rows && (
+              <OutcomeShareChart
+                outcomes={rows}
+                horizontal={compact}
+                onSelect={onSelectOutcome}
+                disabled={loading || selectionDisabled}
+              />
+            )}
+
+            {rows && !compact && (
               <ol className="outcome-list">
                 {rows.map((row) => (
                   <li key={row.outcome} className="outcome-list__item">
-                    <span className="outcome-list__label">
-                      <span className="outcome-list__swatch" data-outcome={row.outcome} />
-                      {outcomeLabel(row.outcome)}
-                    </span>
-                    <span className="outcome-list__share">
-                      {row.share === null ? '—' : percent(row.share)}
-                    </span>
-                    <span className="outcome-list__count">
-                      {formatCount(row.decisions ?? 0)}
-                      <span className="sr-only">
-                        {row.decisions === 1 ? ' decisão' : ' decisões'}
+                    <button
+                      type="button"
+                      className="indicator-target indicator-target--outcome"
+                      disabled={
+                        loading || selectionDisabled || row.decisions === null || !onSelectOutcome
+                      }
+                      onClick={() =>
+                        row.decisions !== null && onSelectOutcome?.(row.outcome, row.decisions)
+                      }
+                      aria-label={`Consultar documentos com resultado ${outcomeLabel(row.outcome)}: ${formatCount(row.decisions)} decisões`}
+                    >
+                      <span className="outcome-list__label">
+                        <span className="outcome-list__swatch" data-outcome={row.outcome} />
+                        {outcomeLabel(row.outcome)}
                       </span>
-                    </span>
+                      <span className="outcome-list__share">
+                        {row.share === null ? '—' : percent(row.share)}
+                      </span>
+                      <span className="outcome-list__count">
+                        {formatCount(row.decisions ?? 0)}
+                        <span className="sr-only">
+                          {row.decisions === 1 ? ' decisão' : ' decisões'}
+                        </span>
+                      </span>
+                    </button>
                   </li>
                 ))}
               </ol>
@@ -138,8 +175,14 @@ function OutcomeSharePanel({ outcome, onRetry }: OutcomeSharePanelProps) {
         </article>
 
         <article className="panorama-card panorama-card--composition">
-          <div className="composition__explain">
-            <h4 className="composition__explain-title">Como este número é formado?</h4>
+          <Explanation className="composition__explain">
+            {compact ? (
+              <summary>
+                <Info size={14} aria-hidden="true" /> Como este número é formado?
+              </summary>
+            ) : (
+              <h4 className="composition__explain-title">Como este número é formado?</h4>
+            )}
             <p className="composition__explain-text">
               O resultado é lido do dispositivo que o próprio tribunal publicou — a frase que
               declara se o recurso foi provido, provido em parte ou negado. Quando o dispositivo não
@@ -150,7 +193,7 @@ function OutcomeSharePanel({ outcome, onRetry }: OutcomeSharePanelProps) {
               Nem toda decisão julga o mérito de um recurso: conflito de competência, recurso
               prejudicado e extinção não têm resultado a declarar.
             </p>
-          </div>
+          </Explanation>
         </article>
       </div>
     </section>

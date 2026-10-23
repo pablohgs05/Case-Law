@@ -176,3 +176,100 @@ def test_the_endpoint_is_documented(client: TestClient) -> None:
 
     assert described["get"]["summary"]
     assert "200" in described["get"]["responses"]
+
+
+@pytest.mark.parametrize(
+    "outcome,expected", [("negado", 6), ("provido", 2), ("parcialmente_provido", 1)]
+)
+def test_selecting_a_category_returns_exactly_its_decisions(
+    client: TestClient, outcome: str, expected: int
+) -> None:
+    original = share(client)
+    category = next(row for row in original["outcomes"] if row["outcome"] == outcome)
+    assert searched(client, resultado=[outcome]) == category["decisions"] == expected
+    assert expected < original["total"]
+    for endpoint in ("volume-by-court", "volume-by-period", "outcome-share"):
+        response = client.get(
+            f"/indicators/{endpoint}", params={"q": TERM, "resultado": outcome}
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["total"] == expected
+
+
+@pytest.mark.parametrize(
+    "values,expected",
+    [
+        (["negado", "provido"], 8),
+        ([" negado ", "negado", "", "  "], 6),
+        (["inexistente"], 0),
+        (["negado", "inexistente"], 6),
+        (["", "  "], 12),
+    ],
+)
+def test_outcome_values_are_a_union_without_duplicates(
+    client: TestClient, values: list[str], expected: int
+) -> None:
+    assert searched(client, resultado=values) == expected
+    assert share(client, resultado=values)["total"] == expected
+
+
+def test_outcome_adds_to_every_existing_filter(
+    client: TestClient, mixed: psycopg.Connection[DictRow]
+) -> None:
+    mixed.execute(
+        """UPDATE core.decisao SET orgao_julgador = 'CORTE ESPECIAL', relator = 'RELATOR A', classe_cnj = 198, data_referencia = '2026-03-31', data_publicacao = '2026-04-01' WHERE tribunal_sigla = 'STJ' AND resultado = 'negado'"""
+    )
+    params: dict[str, Any] = {
+        "tribunal": ["STJ"],
+        "orgao_julgador": ["CORTE ESPECIAL"],
+        "relator": ["RELATOR A"],
+        "classe_cnj": [198],
+        "date_from": "2026-03-31",
+        "date_to": "2026-03-31",
+        "published_from": "2026-04-01",
+        "published_to": "2026-04-01",
+        "resultado": ["negado"],
+    }
+    assert searched(client, **params) == 4
+    for endpoint in ("volume-by-court", "volume-by-period", "outcome-share"):
+        response = client.get(f"/indicators/{endpoint}", params={"q": TERM, **params})
+        assert response.status_code == 200, response.text
+        assert response.json()["total"] == 4
+    for change in (
+        {"resultado": ["provido"]},
+        {"tribunal": ["TRF1"]},
+        {"orgao_julgador": ["OUTRO ORGAO"]},
+        {"relator": ["OUTRO RELATOR"]},
+        {"classe_cnj": [213]},
+        {"date_from": "2026-04-01", "date_to": "2026-04-01"},
+        {"published_from": "2026-04-02", "published_to": "2026-04-02"},
+        {"q": "termoausentezzzz"},
+    ):
+        narrowed = {"q": TERM, **params, **change}
+        response = client.get("/decisions", params=narrowed)
+        assert response.status_code == 200, response.text
+        assert response.json()["total"] == 0
+        temporal = client.get("/indicators/volume-by-period", params=narrowed)
+        assert temporal.status_code == 200, temporal.text
+        assert temporal.json()["total"] == 0
+
+
+@pytest.mark.parametrize(
+    "endpoint",
+    [
+        "/decisions",
+        "/indicators/volume-by-court",
+        "/indicators/volume-by-period",
+        "/indicators/outcome-share",
+    ],
+)
+def test_outcome_is_documented_as_a_repeatable_optional_parameter(
+    client: TestClient, endpoint: str
+) -> None:
+    parameters = client.get("/openapi.json").json()["paths"][endpoint]["get"][
+        "parameters"
+    ]
+    outcome = next(p for p in parameters if p["name"] == "resultado")
+    assert not outcome.get("required", False)
+    assert outcome["description"]
+    assert any(schema.get("type") == "array" for schema in outcome["schema"]["anyOf"])

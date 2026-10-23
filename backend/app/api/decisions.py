@@ -91,6 +91,10 @@ def _filters_sql(
     date_to: date | None,
     published_from: date | None = None,
     published_to: date | None = None,
+    judging_bodies: list[str] | None = None,
+    reporting_judges: list[str] | None = None,
+    procedural_classes: list[int] | None = None,
+    outcomes: list[str] | None = None,
 ) -> str:
     """
     The optional narrowing, appended to the text match. The count and the page
@@ -104,6 +108,14 @@ def _filters_sql(
     clauses: list[str] = []
     if tribunals:
         clauses.append("tribunal_sigla = ANY(%(tribunais)s)")
+    if judging_bodies:
+        clauses.append("orgao_julgador = ANY(%(orgao_julgador)s)")
+    if reporting_judges:
+        clauses.append("relator = ANY(%(relator)s)")
+    if procedural_classes:
+        clauses.append("classe_cnj = ANY(%(classe_cnj)s)")
+    if outcomes:
+        clauses.append("resultado = ANY(%(resultado)s)")
     if date_from is not None:
         clauses.append("data_referencia >= %(date_from)s")
     if date_to is not None:
@@ -122,6 +134,11 @@ class Narrowing(NamedTuple):
     parameters: dict[str, Any]
 
 
+def _nonblank_unique_text(values: list[str] | None) -> list[str]:
+    """Drop blanks and exact duplicates without changing option identities."""
+    return list(dict.fromkeys(value for value in values or [] if value.strip()))
+
+
 def _narrowing(
     q: str,
     tribunal: list[str] | None,
@@ -129,6 +146,10 @@ def _narrowing(
     date_to: date | None,
     published_from: date | None,
     published_to: date | None,
+    orgao_julgador: list[str] | None = None,
+    relator: list[str] | None = None,
+    classe_cnj: list[int] | None = None,
+    resultado: list[str] | None = None,
 ) -> Narrowing:
     """
     Read the narrowing once, so nothing can describe a different set.
@@ -150,10 +171,24 @@ def _narrowing(
     tribunais = list(
         dict.fromkeys(value.strip() for value in tribunal or [] if value.strip())
     )
+    orgaos = _nonblank_unique_text(orgao_julgador)
+    relatores = _nonblank_unique_text(relator)
+    classes = list(dict.fromkeys(classe_cnj or []))
+    outcomes = list(
+        dict.fromkeys(value.strip() for value in resultado or [] if value.strip())
+    )
 
     parameters: dict[str, Any] = {"term": q}
     if tribunais:
         parameters["tribunais"] = tribunais
+    if orgaos:
+        parameters["orgao_julgador"] = orgaos
+    if relatores:
+        parameters["relator"] = relatores
+    if classes:
+        parameters["classe_cnj"] = classes
+    if outcomes:
+        parameters["resultado"] = outcomes
     if date_from is not None:
         parameters["date_from"] = date_from
     if date_to is not None:
@@ -164,7 +199,17 @@ def _narrowing(
         parameters["published_to"] = published_to
 
     return Narrowing(
-        _filters_sql(tribunais, date_from, date_to, published_from, published_to),
+        _filters_sql(
+            tribunais,
+            date_from,
+            date_to,
+            published_from,
+            published_to,
+            orgaos,
+            relatores,
+            classes,
+            outcomes,
+        ),
         parameters,
     )
 
@@ -582,7 +627,6 @@ INVERTED_RANGE = "date_from must be less than or equal to date_to."
 INVERTED_PUBLICATION_RANGE = (
     "published_from must be less than or equal to published_to."
 )
-
 # The search fails with 400 in two ways, and a caller handles them differently:
 # one is a value the database cannot read, the other a range that is backwards.
 SEARCH_RESPONSES: dict[int | str, dict[str, Any]] = {
@@ -611,7 +655,7 @@ SEARCH_RESPONSES: dict[int | str, dict[str, Any]] = {
 
 @router.get(
     "/decisions",
-    summary="Search decisions by term, court and date",
+    summary="Search decisions by term and filters",
     responses=SEARCH_RESPONSES,
 )
 def search_decisions(
@@ -640,6 +684,52 @@ def search_decisions(
                 "not an error. Omitted, every court is searched."
             ),
             examples=[["TJDFT"], ["TJDFT", "STJ"]],
+        ),
+    ] = None,
+    orgao_julgador: Annotated[
+        list[str] | None,
+        Query(
+            description=(
+                "Exact judging-body values from `/filters`. Repeat the parameter "
+                "for OR within this field; it combines with other filters using "
+                "AND. Blank and repeated values are ignored."
+            ),
+            examples=[["1ª TURMA CÍVEL"], ["1ª TURMA CÍVEL", "CÂMARA CRIMINAL"]],
+        ),
+    ] = None,
+    relator: Annotated[
+        list[str] | None,
+        Query(
+            description=(
+                "Exact reporting-judge values from `/filters`. Repeat the "
+                "parameter for OR within this field; it combines with other "
+                "filters using AND. Blank and repeated values are ignored."
+            ),
+            examples=[["FABRÍCIO FONTOURA BEZERRA"]],
+        ),
+    ] = None,
+    classe_cnj: Annotated[
+        list[int] | None,
+        Query(
+            description=(
+                "CNJ class codes from `/filters`. Repeat for OR within this "
+                "field; other filters combine using AND. Repeated codes are "
+                "ignored. Decisions without a class do not match."
+            ),
+            examples=[[198], [198, 213]],
+        ),
+    ] = None,
+    resultado: Annotated[
+        list[str] | None,
+        Query(
+            description=(
+                "Exact outcome values recorded by `/indicators/outcome-share`: "
+                "`negado`, `provido`, or `parcialmente_provido`. Repeat for OR "
+                "within this field; other filters combine using AND. Blank and "
+                "repeated values are ignored. Decisions without an outcome do "
+                "not match; unknown values return no matches."
+            ),
+            examples=[["negado"], ["provido", "parcialmente_provido"]],
         ),
     ] = None,
     date_from: Annotated[
@@ -747,9 +837,14 @@ def search_decisions(
     page number, never an error. A `page_size` above the maximum is served at
     the maximum, and the answer says which size was applied.
 
-    `tribunal`, `date_from`, `date_to`, `published_from` and `published_to` are
-    optional and narrow the search together: a result matches `q` **and** comes
-    from one of the courts **and** falls within every period sent.
+    `tribunal`, `orgao_julgador`, `relator`, `classe_cnj`, `date_from`, `date_to`,
+    `published_from` and `published_to` are optional and narrow the search
+    together. Repeated values within one field are ORed; different filters are
+    ANDed with the expression and each other. Text values are compared exactly
+    as returned by `/filters`, after blank entries are discarded.
+
+    Class values are numeric CNJ codes from `/filters`. Unknown codes return
+    no matches; decisions without a class are excluded only when it is filtered.
 
     There are two periods. `date_from`/`date_to` compare `decided_on` — the
     judgement date, or the publication date when the court did not record the
@@ -780,7 +875,16 @@ def search_decisions(
     offset = (page - 1) * page_size
 
     filters, narrowed = _narrowing(
-        q, tribunal, date_from, date_to, published_from, published_to
+        q,
+        tribunal,
+        date_from,
+        date_to,
+        published_from,
+        published_to,
+        orgao_julgador,
+        relator,
+        classe_cnj,
+        resultado,
     )
     parameters: dict[str, Any] = {
         **narrowed,

@@ -4,7 +4,7 @@ The search's decisions counted by court, run against PostgreSQL.
 The promise is agreement: the counts have to add up to the same total the
 search reports for the same parameters. Only the real statement over the real
 tables can show that, since it is the WHERE clause the two share that makes it
-true.
+true
 """
 
 from typing import Any
@@ -45,11 +45,18 @@ def spread(db_rolled_back: psycopg.Connection[DictRow]) -> psycopg.Connection[Di
     for abbreviation, count in (("STF", 1), ("STJ", 3), ("TRF1", 2)):
         register(db_rolled_back, abbreviation)
         for n in range(count):
-            decide(db_rolled_back, abbreviation, f"{abbreviation}{n:04d}")
+            identifier = f"{abbreviation}{n:04d}"
+            decide(db_rolled_back, abbreviation, identifier)
             db_rolled_back.execute(
-                "UPDATE core.decisao SET data_referencia = %s "
+                "UPDATE core.decisao "
+                "SET data_referencia = %s, orgao_julgador = %s, relator = %s "
                 "WHERE identificador_fonte = %s",
-                (f"2026-0{n + 2}-10", f"{abbreviation}{n:04d}"),
+                (
+                    f"2026-0{n + 2}-10",
+                    f"ÓRGÃO {abbreviation} {n}",
+                    f"RELATOR {abbreviation} {n}",
+                    identifier,
+                ),
             )
     return db_rolled_back
 
@@ -61,6 +68,10 @@ def spread(db_rolled_back: psycopg.Connection[DictRow]) -> psycopg.Connection[Di
         {"tribunal": ["STJ"]},
         {"tribunal": ["STJ", "TRF1"]},
         {"tribunal": ["NAOEXISTE"]},
+        {"orgao_julgador": ["ÓRGÃO STJ 0", "ÓRGÃO TRF1 0"]},
+        {"relator": ["RELATOR STJ 0", "RELATOR TRF1 0"]},
+        {"orgao_julgador": ["ÓRGÃO STJ 0"], "relator": ["RELATOR STJ 1"]},
+        {"orgao_julgador": ["ÓRGÃO NÃO EXISTE"]},
         {"date_from": "2026-02-01", "date_to": "2026-02-28"},
         {"date_from": "2026-03-01"},
         {"date_to": "2026-03-31"},
@@ -71,6 +82,10 @@ def spread(db_rolled_back: psycopg.Connection[DictRow]) -> psycopg.Connection[Di
         "one court",
         "two courts",
         "unknown court",
+        "several judging bodies",
+        "several reporting judges",
+        "judging body and reporter ANDed",
+        "unknown judging body",
         "one month",
         "open ended start",
         "open ended finish",
@@ -159,6 +174,9 @@ def test_the_endpoint_is_documented(client: TestClient) -> None:
     assert {p["name"] for p in operation["parameters"]} >= {
         "q",
         "tribunal",
+        "orgao_julgador",
+        "relator",
+        "classe_cnj",
         "date_from",
         "date_to",
         "published_from",

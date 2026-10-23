@@ -121,24 +121,11 @@ function installApi({
 const tab = (name: string) => screen.getByRole('tab', { name });
 const panorama = () => within(screen.getByRole('tabpanel', { name: 'Panorama' }));
 const chartCard = () => within(screen.getByRole('article', { name: 'Volume por tribunal' }));
-const compositionCard = () =>
-  within(screen.getByRole('article', { name: 'Composição do recorte' }));
-
-// The chart is drawn for the eye and hidden from assistive technology; the
-// composition beside it carries the same numbers as text.
 const bars = () =>
   [...document.querySelectorAll('.volume-chart__row')].map((row) => [
     row.querySelector('.volume-chart__label')?.textContent,
     row.querySelector('.volume-chart__value')?.textContent,
   ]);
-const listed = () =>
-  compositionCard()
-    .getAllByRole('listitem')
-    .map((item) => [
-      item.querySelector('.composition__abbreviation')?.textContent,
-      item.querySelector('.composition__count')?.firstChild?.textContent,
-    ]);
-
 async function search(user: ReturnType<typeof userEvent.setup>, expression: string) {
   const box = screen.getByLabelText('Pesquisar decisões');
   await user.clear(box);
@@ -326,7 +313,7 @@ describe('the aggregation request', () => {
   });
 });
 
-describe('the chart and the composition', () => {
+describe('the interactive chart', () => {
   it('rank the courts largest first even when the API does not, ties by abbreviation', async () => {
     installApi();
     const user = userEvent.setup();
@@ -338,7 +325,7 @@ describe('the chart and the composition', () => {
     expect(bars().map(([court]) => court)).toEqual(RANKED);
   });
 
-  it('show every count beside its court, the same in both, without hover', async () => {
+  it('shows each court and count directly in an accessible chart button', async () => {
     installApi();
     const user = userEvent.setup();
     renderApp();
@@ -353,12 +340,13 @@ describe('the chart and the composition', () => {
       ['TJMG', '2'],
     ];
     expect(bars()).toEqual(expected);
-    expect(listed()).toEqual(expected);
-    expect(compositionCard().getByText('11 documentos')).toBeVisible();
-    // Read as text: the court, its name and the count with its unit.
-    expect(compositionCard().getAllByRole('listitem')[0]).toHaveTextContent(
-      /TRF3.*Tribunal Regional Federal da 3ª Região.*4 decisões/,
-    );
+    expect(screen.queryByRole('article', { name: 'Composição do recorte' })).toBeNull();
+    for (const [court, count] of expected) {
+      const target = screen.getByRole('button', {
+        name: `Consultar documentos de ${court}: ${count} decisões`,
+      });
+      expect(target.closest('[aria-hidden="true"]')).toBeNull();
+    }
   });
 
   it('measure the bars from zero on whole, round ticks', async () => {
@@ -447,7 +435,7 @@ describe('the panorama without counts to draw', () => {
       ),
     ).toBeVisible();
     expect(document.querySelector('.volume-chart')).toBeNull();
-    expect(compositionCard().queryAllByRole('listitem')).toHaveLength(0);
+    expect(screen.queryByRole('article', { name: 'Composição do recorte' })).toBeNull();
   });
 
   it('says it failed, never as no decisions, and asks again on Tentar novamente', async () => {

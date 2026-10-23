@@ -491,3 +491,70 @@ def test_historical_cut_does_not_fabricate_tjdft_coverage(
     assert stj["total"] == searched(client, tribunal=["STJ"], **params) == 1
     assert stj["periods"] == [{"period": "1989-06-01", "decisions": 1}]
     assert tjdft == {"total": 0, "granularity": "month", "periods": []}
+
+
+@needs_database
+@pytest.mark.parametrize(
+    "granularity,selected,start,end,expected",
+    [
+        ("month", "2024-02-01", "2024-02-01", "2024-02-29", 2),
+        ("quarter", "2024-01-01", "2024-01-01", "2024-03-31", 5),
+        ("year", "2024-01-01", "2024-01-01", "2024-12-31", 7),
+    ],
+)
+def test_selecting_a_period_includes_both_edges_and_preserves_the_original_cut(
+    client: TestClient,
+    spread: psycopg.Connection[DictRow],
+    granularity: str,
+    selected: str,
+    start: str,
+    end: str,
+    expected: int,
+) -> None:
+    spread.execute("DELETE FROM core.decisao")
+    dates = [
+        "2023-12-31",
+        "2024-01-01",
+        "2024-02-01",
+        "2024-02-29",
+        "2024-03-01",
+        "2024-03-31",
+        "2024-04-01",
+        "2024-12-31",
+        "2025-01-01",
+    ]
+    for index, judged in enumerate(dates):
+        identifier = f"STJ-edge-{index}"
+        decide(spread, "STJ", identifier)
+        spread.execute(
+            "UPDATE core.decisao SET data_referencia = %s, resultado = 'negado', orgao_julgador = 'CORTE ESPECIAL', relator = 'RELATOR A', classe_cnj = 198 WHERE identificador_fonte = %s",
+            (judged, identifier),
+        )
+    decide(spread, "TJDFT", "other-court")
+    spread.execute(
+        "UPDATE core.decisao SET data_referencia = '2024-02-29', resultado = 'negado' WHERE identificador_fonte = 'other-court'"
+    )
+    original: dict[str, Any] = {
+        "tribunal": ["STJ"],
+        "orgao_julgador": ["CORTE ESPECIAL"],
+        "relator": ["RELATOR A"],
+        "classe_cnj": [198],
+        "resultado": ["negado"],
+    }
+    body = volume_by_period(client, granularity=granularity, **original)
+    bucket = next(p for p in body["periods"] if p["period"] == selected)
+    assert (
+        searched(client, date_from=start, date_to=end, **original)
+        == bucket["decisions"]
+        == expected
+    )
+    # Intersect the selected period with existing dates rather than widen them.
+    limited = {**original, "date_from": "2024-02-01", "date_to": "2024-03-31"}
+    limited_body = volume_by_period(client, granularity=granularity, **limited)
+    limited_bucket = next(p for p in limited_body["periods"] if p["period"] == selected)
+    selected_cut = {
+        **limited,
+        "date_from": max(start, limited["date_from"]),
+        "date_to": min(end, limited["date_to"]),
+    }
+    assert searched(client, **selected_cut) == limited_bucket["decisions"]

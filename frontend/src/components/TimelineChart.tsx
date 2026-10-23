@@ -12,41 +12,7 @@ import {
 import type { PeriodVolume } from '../api/indicators';
 import { formatCount } from './coverageFormat';
 import { axisTicks } from './volumeFormat';
-// Format date label according to granularity
-function formatPeriodLabel(
-  periodStr: string,
-  granularity: 'month' | 'quarter' | 'year' = 'month',
-): string {
-  if (!periodStr) return '';
-  const [yearStr, monthStr] = periodStr.split('-');
-  const year = parseInt(yearStr, 10);
-  const month = parseInt(monthStr, 10);
-
-  if (granularity === 'year') {
-    return `${year}`;
-  }
-  if (granularity === 'quarter') {
-    const q = Math.ceil(month / 3);
-    return `${q}T/${year}`;
-  }
-  // Month: short name in Portuguese
-  const months = [
-    'Jan',
-    'Fev',
-    'Mar',
-    'Abr',
-    'Mai',
-    'Jun',
-    'Jul',
-    'Ago',
-    'Set',
-    'Out',
-    'Nov',
-    'Dez',
-  ];
-  const monthName = months[month - 1] ?? monthStr;
-  return `${monthName}/${String(year).slice(-2)}`;
-}
+import { formatPeriodLabel } from '../search/indicatorSelection';
 
 export type TimelineChartProps = {
   periods: PeriodVolume[];
@@ -56,6 +22,7 @@ export type TimelineChartProps = {
   isAnimationActive?: boolean;
   showValues?: boolean;
   height?: number;
+  selectionDisabled?: boolean;
 };
 
 interface CustomTooltipProps {
@@ -91,6 +58,7 @@ export function TimelineChart({
   isAnimationActive = false,
   showValues = true,
   height = 260,
+  selectionDisabled = false,
 }: TimelineChartProps) {
   const effectiveGranularity = granularity ?? 'month';
   const gradientId = useId().replace(/:/g, '');
@@ -116,6 +84,51 @@ export function TimelineChart({
   }, [maxCount]);
 
   const yDomainMax = Math.max(1, yTicks[yTicks.length - 1] ?? 1);
+  const renderPoint = (raw: unknown) => {
+    const { cx, cy, index } = raw as { cx?: number; cy?: number; index?: number };
+    const point = index === undefined ? undefined : chartData[index];
+    if (!point || cx === undefined || cy === undefined || point.count === null) return <g />;
+    return (
+      <g
+        key={point.period}
+        className="timeline-chart__point indicator-target--period"
+        data-indicator-focus={`period:${point.period}`}
+        role="button"
+        tabIndex={selectionDisabled ? -1 : 0}
+        aria-disabled={selectionDisabled}
+        aria-label={`Consultar documentos de ${point.label}: ${formatCount(point.count)} ${point.count === 1 ? 'decisão' : 'decisões'}`}
+        onClick={(event) => {
+          event.stopPropagation();
+          if (!selectionDisabled) onSelectPeriod?.(point.period);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!selectionDisabled) onSelectPeriod?.(point.period);
+          }
+        }}
+      >
+        <circle
+          className="timeline-chart__point-focus"
+          cx={cx}
+          cy={cy}
+          r={10}
+          fill="transparent"
+          pointerEvents="none"
+        />
+        <circle
+          className="recharts-area-dot"
+          cx={cx}
+          cy={cy}
+          r={4}
+          fill="var(--search-primary)"
+          stroke="#fff"
+          strokeWidth={1.5}
+        />
+      </g>
+    );
+  };
 
   if (periods.length === 0) {
     return (
@@ -127,8 +140,11 @@ export function TimelineChart({
 
   return (
     <div className="timeline-chart-wrapper">
-      {/* Graphical Chart (hidden from screen readers, accessible table below) */}
-      <div className="timeline-chart__visual" aria-hidden="true" style={{ width: '100%', height }}>
+      <div
+        className="timeline-chart__visual"
+        aria-hidden={onSelectPeriod ? undefined : true}
+        style={{ width: '100%', height }}
+      >
         <ResponsiveContainer
           width="100%"
           height={height}
@@ -140,12 +156,20 @@ export function TimelineChart({
             accessibilityLayer={false}
             data={chartData}
             margin={{ top: 20, right: 24, left: 0, bottom: 20 }}
-            onClick={(state) => {
-              if (state.activeTooltipIndex !== undefined && state.activeTooltipIndex !== null) {
-                const item = chartData[Number(state.activeTooltipIndex)];
-                if (item) onSelectPeriod?.(item.period);
-              }
-            }}
+            onClick={
+              onSelectPeriod
+                ? (state) => {
+                    if (
+                      selectionDisabled ||
+                      state.activeTooltipIndex === null ||
+                      state.activeTooltipIndex === undefined
+                    )
+                      return;
+                    const point = chartData[Number(state.activeTooltipIndex)];
+                    if (point && point.count !== null) onSelectPeriod(point.period);
+                  }
+                : undefined
+            }
           >
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -204,7 +228,13 @@ export function TimelineChart({
               strokeWidth={2.5}
               fill={showValues ? `url(#${gradientId})` : '#f8ebe6'}
               isAnimationActive={isAnimationActive}
-              dot={periods.length === 1 ? { r: 5, fill: 'var(--search-primary)' } : false}
+              dot={
+                onSelectPeriod
+                  ? renderPoint
+                  : periods.length === 1
+                    ? { r: 5, fill: 'var(--search-primary)' }
+                    : false
+              }
               activeDot={{
                 r: 5,
                 fill: '#4A151E',
@@ -232,19 +262,7 @@ export function TimelineChart({
           <tbody>
             {chartData.map((d) => (
               <tr key={d.period} aria-current={selectedPeriod === d.period ? 'true' : undefined}>
-                <th scope="row">
-                  {onSelectPeriod ? (
-                    <button
-                      type="button"
-                      aria-pressed={selectedPeriod === d.period}
-                      onClick={() => onSelectPeriod(d.period)}
-                    >
-                      {d.label}
-                    </button>
-                  ) : (
-                    d.label
-                  )}
-                </th>
+                <th scope="row">{d.label}</th>
                 <td>{formatCount(d.count) ?? 'Não informado'}</td>
               </tr>
             ))}

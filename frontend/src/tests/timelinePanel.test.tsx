@@ -90,6 +90,11 @@ it('distinguishes zero from an unknown count', () => {
 });
 
 const card = () => within(screen.getByRole('article', { name: 'Volume ao longo do tempo' }));
+async function openTimeline(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('tab', { name: 'Panorama' }));
+  const toggle = screen.getByRole('button', { name: 'Como o volume mudou' });
+  if (toggle.getAttribute('aria-expanded') === 'false') await user.click(toggle);
+}
 
 it('loads the applied search in Panorama, including court and dates, only once per cut', async () => {
   const requests = api();
@@ -103,10 +108,11 @@ it('loads the applied search in Panorama, including court and dates, only once p
   );
   await user.click(screen.getByRole('button', { name: 'Pesquisar' }));
   expect(requests()).toHaveLength(0);
-  await user.click(screen.getByRole('tab', { name: 'Panorama' }));
+  await openTimeline(user);
   await card().findByRole('table');
   expect(within(card().getByRole('table')).getByText('12')).toBeInTheDocument();
   expect(card().getByRole('table').parentElement).toHaveClass('sr-only');
+  expect(card().queryByText('Consultar documentos por período')).toBeNull();
   expect(card().queryByText('Consultar valores por período')).toBeNull();
   expect(card().queryByText(/Agrupamento pela data/)).toBeNull();
   expect(requests()[0].searchParams.getAll('tribunal')).toEqual(['STJ']);
@@ -114,7 +120,7 @@ it('loads the applied search in Panorama, including court and dates, only once p
   expect(requests()[0].searchParams.has('page')).toBe(false);
   expect(requests()[0].searchParams.has('order')).toBe(false);
   await user.click(screen.getByRole('tab', { name: 'Documentos' }));
-  await user.click(screen.getByRole('tab', { name: 'Panorama' }));
+  await openTimeline(user);
   expect(requests()).toHaveLength(1);
 });
 
@@ -124,7 +130,7 @@ it('retries a failed temporal request without presenting failure as an empty ser
   const user = userEvent.setup();
   renderApp();
   await user.click(screen.getByRole('button', { name: 'Pesquisar' }));
-  await user.click(screen.getByRole('tab', { name: 'Panorama' }));
+  await openTimeline(user);
   await card().findByRole('alert');
   expect(card().queryByText(/Nenhum dado temporal/)).toBeNull();
   await user.click(card().getByRole('button', { name: 'Tentar novamente o gráfico temporal' }));
@@ -137,7 +143,7 @@ it('shows an empty state for a successful series without decisions', async () =>
   const user = userEvent.setup();
   renderApp();
   await user.click(screen.getByRole('button', { name: 'Pesquisar' }));
-  await user.click(screen.getByRole('tab', { name: 'Panorama' }));
+  await openTimeline(user);
   await card().findByText(/Nenhum dado temporal encontrado/);
   expect(card().queryByRole('alert')).toBeNull();
 });
@@ -156,7 +162,7 @@ it('does not replace the new cut with a late answer from the previous search', a
   await user.clear(box);
   await user.type(box, 'primeiro tema');
   await user.click(screen.getByRole('button', { name: 'Pesquisar' }));
-  await user.click(screen.getByRole('tab', { name: 'Panorama' }));
+  await openTimeline(user);
   await waitFor(() => expect(requests()).toHaveLength(1));
   expect(card().getByRole('status')).toHaveTextContent('Carregando');
   await user.clear(box);
@@ -172,7 +178,7 @@ it('keeps the coverage warning visible and identifies a single period', async ()
   const user = userEvent.setup();
   renderApp();
   await user.click(screen.getByRole('button', { name: 'Pesquisar' }));
-  await user.click(screen.getByRole('tab', { name: 'Panorama' }));
+  await openTimeline(user);
   expect(await card().findByText('O recorte contém um único período.')).toBeInTheDocument();
   expect(screen.getByText(/Os tribunais têm janelas de cobertura diferentes/)).toBeVisible();
   await waitFor(() => expect(document.querySelector('.recharts-area-dot')).not.toBeNull());
@@ -268,7 +274,7 @@ it.each([false, true])(
       ),
     );
     const total = Number(document.querySelector('.search-summary strong')!.textContent);
-    await user.click(screen.getByRole('tab', { name: 'Panorama' }));
+    await openTimeline(user);
     const table = await card().findByRole('table');
     const sum = within(table)
       .getAllByRole('cell')
@@ -288,7 +294,7 @@ it('keeps the successful search available when the temporal indicator fails', as
   await waitFor(() =>
     expect(document.querySelector('.search-summary strong')).toHaveTextContent('12'),
   );
-  await user.click(screen.getByRole('tab', { name: 'Panorama' }));
+  await openTimeline(user);
   await card().findByRole('alert');
   await user.click(screen.getByRole('tab', { name: 'Documentos' }));
   expect(document.querySelector('.search-summary strong')).toHaveTextContent('12');

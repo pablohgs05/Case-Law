@@ -38,6 +38,7 @@ type DecisionResultCardProps = {
   state?: unknown;
   // Called as the card is followed, for what the address alone does not do.
   onOpen?: () => void;
+  onSelect?: () => void;
   openButtonId?: string;
   // The decision open in the detail panel, marked so the list says which.
   selected?: boolean;
@@ -100,6 +101,7 @@ function DecisionResultCard({
   replace,
   state,
   onOpen,
+  onSelect,
   openButtonId,
   selected = false,
   rank,
@@ -184,6 +186,11 @@ function DecisionResultCard({
         </dl>
 
         <div className="decision-result-card__actions" aria-live="polite">
+          {onSelect && (
+            <button type="button" className="indicator-document__open" onClick={onSelect}>
+              Abrir decisão
+            </button>
+          )}
           {officialUrl && decision.source_url_reachable !== false ? (
             <a
               className="decision-result-card__source-link"

@@ -28,8 +28,8 @@ LONG = "1000004"
 
 
 @pytest.fixture
-def client(db: psycopg.Connection[DictRow]) -> Iterator[TestClient]:
-    app.dependency_overrides[get_connection] = lambda: db
+def client(db_rolled_back: psycopg.Connection[DictRow]) -> Iterator[TestClient]:
+    app.dependency_overrides[get_connection] = lambda: db_rolled_back
     yield TestClient(app)
     app.dependency_overrides.clear()
 

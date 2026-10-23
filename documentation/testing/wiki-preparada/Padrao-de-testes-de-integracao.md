@@ -1,5 +1,7 @@
 # Padrão de testes de integração — Case-Law
 
+> 🎤 **Vai conversar com o professor?** [**ABRA O GUIA VISUAL**](https://github.com/pablohgs05/Case-Law/blob/dev/documentation/testing/wiki-preparada/Guia-visual-integracao.md) — fluxograma, critérios, prova e colinha em uma página.
+
 **Objetivo:** definir uma regra simples para que os desenvolvedores testem a comunicação entre partes do sistema, com critérios claros e evidências na Pull Request.
 
 **Situação:** proposta de padrão para validação com o professor. Os exemplos abaixo **já existem no código** e são adequados ao projeto; não significam que a equipe original já tenha formalizado esse processo. A aplicação de testes unitários é tratada separadamente.

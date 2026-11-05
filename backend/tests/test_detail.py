@@ -28,8 +28,8 @@ LONG = "1000004"
 
 
 @pytest.fixture
-def client(db: psycopg.Connection[DictRow]) -> Iterator[TestClient]:
-    app.dependency_overrides[get_connection] = lambda: db
+def client(db_rolled_back: psycopg.Connection[DictRow]) -> Iterator[TestClient]:
+    app.dependency_overrides[get_connection] = lambda: db_rolled_back
     yield TestClient(app)
     app.dependency_overrides.clear()
 
@@ -274,6 +274,7 @@ FIELDS = {
     "small_claims": "turma_recursal",
     "source_url": "url_fonte",
     "source_url_reachable": "link_valido",
+    "deliberation": "deliberacao",
 }
 
 
@@ -319,6 +320,58 @@ def test_a_field_the_row_leaves_empty_comes_back_null(
 
     assert body["reporting_judge"] is None
     assert body["case_number"] is None
+
+
+@pytest.fixture
+def undoing_client(db_rolled_back: psycopg.Connection[DictRow]) -> Iterator[TestClient]:
+    app.dependency_overrides[get_connection] = lambda: db_rolled_back
+    yield TestClient(app)
+    app.dependency_overrides.clear()
+
+
+def test_the_two_undecided_states_are_told_apart(
+    undoing_client: TestClient, db_rolled_back: psycopg.Connection[DictRow]
+) -> None:
+    """
+    Both answer `deliberation: null`, and they do not mean the same thing. One
+    says the court published a dispositive nobody could read; the other says it
+    published none. The screen names them differently, and only `outcome`
+    separates them, so the pair has to survive the trip.
+    """
+    unread = undoing_client.get(f"/decisions/{SOURCE}/1000002").json()
+
+    assert unread["deliberation"] is None
+    assert unread["outcome"] == "APELAÇÃO CONHECIDA E DESPROVIDA."
+
+    db_rolled_back.execute(
+        "UPDATE core.decisao SET decisao_texto = NULL, deliberacao = NULL "
+        "WHERE fonte_codigo = %s AND identificador_fonte = %s",
+        (SOURCE, PRESENT),
+    )
+
+    unpublished = undoing_client.get(f"/decisions/{SOURCE}/{PRESENT}").json()
+
+    assert unpublished["deliberation"] is None
+    assert unpublished["outcome"] is None
+
+
+def test_the_vote_is_never_read_from_the_result(
+    undoing_client: TestClient, db_rolled_back: psycopg.Connection[DictRow]
+) -> None:
+    """
+    An appeal that lost is not unanimous for having lost. The two travel as
+    separate fields, so a screen cannot infer one from the other.
+    """
+    db_rolled_back.execute(
+        "UPDATE core.decisao SET decisao_texto = %s, deliberacao = %s "
+        "WHERE fonte_codigo = %s AND identificador_fonte = %s",
+        ("RECURSO CONHECIDO E DESPROVIDO. MAIORIA.", "maioria", SOURCE, PRESENT),
+    )
+
+    body = undoing_client.get(f"/decisions/{SOURCE}/{PRESENT}").json()
+
+    assert body["deliberation"] == "maioria"
+    assert "DESPROVIDO" in body["outcome"]
 
 
 def test_the_detail_and_the_search_describe_the_same_decision(

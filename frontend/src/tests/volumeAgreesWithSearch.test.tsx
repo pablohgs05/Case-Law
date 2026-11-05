@@ -128,7 +128,9 @@ function searchTotal(): number {
 
 // What the panorama says the same cut holds, and what its bars add up to.
 function panoramaTotal(): number {
-  const panel = within(screen.getByRole('tabpanel', { name: 'Panorama' }));
+  // Scoped to the volume card: two panels now state the size of the cut,
+  // and this test is about the one drawn beside the results.
+  const panel = within(screen.getByRole('article', { name: 'Volume por tribunal' }));
   return digits(panel.getByText(/decis(ão|ões) no recorte/).textContent);
 }
 
@@ -160,7 +162,9 @@ async function narrowByDate(user: ReturnType<typeof userEvent.setup>, from: stri
 
 async function openPanorama(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('tab', { name: 'Panorama' }));
-  await screen.findByText(/decis(ão|ões) no recorte/);
+  await within(screen.getByRole('article', { name: 'Volume por tribunal' })).findByText(
+    /decis(ão|ões) no recorte/,
+  );
 }
 
 beforeEach(() => {

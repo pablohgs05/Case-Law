@@ -88,12 +88,196 @@ def identifiers(body: dict[str, Any]) -> set[str]:
     return {result["identifier"] for result in body["results"]}
 
 
+def add_text_filter_decision(
+    db: psycopg.Connection[DictRow],
+    identifier: str,
+    judging_body: str,
+    reporting_judge: str,
+) -> None:
+    ementa = f"CIVIL. Dano moral. Filtro {identifier}."
+    db.execute(
+        """
+        INSERT INTO core.decisao (
+            fonte_codigo, identificador_fonte, tribunal_sigla,
+            orgao_julgador, relator, classe_cnj, data_referencia, ementa,
+            turma_recursal, possui_inteiro_teor, url_fonte, ementa_busca
+        ) VALUES (
+            'text-filter-test', %s, 'STJ', %s, %s, 198, '2026-03-10', %s,
+            FALSE, FALSE, 'https://example.com/' || %s,
+            TO_TSVECTOR('portugues_sem_acento', %s)
+        )
+        """,
+        (identifier, judging_body, reporting_judge, ementa, identifier, ementa),
+    )
+
+
+def test_text_filters_or_within_field_and_and_across_fields(
+    client: TestClient,
+    db: psycopg.Connection[DictRow],
+) -> None:
+    add_text_filter_decision(db, "9100001", " ÓRGÃO NOVO ", "RELATOR A")
+    add_text_filter_decision(db, "9100002", " ÓRGÃO NOVO ", "RELATOR B")
+    add_text_filter_decision(db, "9100003", "ÓRGÃO NOVO", "RELATOR A")
+    add_text_filter_decision(db, "9100004", "OUTRO ÓRGÃO", "RELATOR C")
+
+    bodies = [" ÓRGÃO NOVO ", "OUTRO ÓRGÃO"]
+    judges = ["RELATOR A", "RELATOR B", "RELATOR C"]
+    first = search(
+        client,
+        tribunal="STJ",
+        orgao_julgador=bodies,
+        relator=judges,
+        page=1,
+        page_size=1,
+    )
+    second = search(
+        client,
+        tribunal="STJ",
+        orgao_julgador=bodies,
+        relator=judges,
+        page=2,
+        page_size=1,
+    )
+
+    third = search(
+        client,
+        tribunal="STJ",
+        orgao_julgador=bodies,
+        relator=judges,
+        page=3,
+        page_size=1,
+    )
+
+    assert first["total"] == second["total"] == third["total"] == 3
+    assert len(first["results"]) == len(second["results"]) == 1
+    assert len(third["results"]) == 1
+    assert identifiers(first) | identifiers(second) | identifiers(third) == {
+        "9100001",
+        "9100002",
+        "9100004",
+    }
+
+    # The padded and unpadded option values remain different identities.
+    padded = search(client, orgao_julgador=" ÓRGÃO NOVO ")
+    unpadded = search(client, orgao_julgador="ÓRGÃO NOVO")
+    reporter_only = search(client, relator="RELATOR A")
+    assert identifiers(padded) == {"9100001", "9100002"}
+    assert identifiers(unpadded) == {"9100003"}
+    assert identifiers(reporter_only) == {"9100001", "9100003"}
+
+    intersection = search(
+        client,
+        tribunal="STJ",
+        orgao_julgador=bodies,
+        relator="RELATOR B",
+        date_from="2026-03-10",
+        date_to="2026-03-10",
+    )
+    assert identifiers(intersection) == {"9100002"}
+
+    # Blank and duplicate values are removed once in the shared narrowing.
+    repeated = search(
+        client,
+        orgao_julgador=[" ÓRGÃO NOVO ", " ÓRGÃO NOVO ", "  "],
+    )
+    assert repeated == padded
+    assert search(client, orgao_julgador=["", "   "]) == search(client)
+    missing = search(client, relator="RELATOR INEXISTENTE")
+    assert missing["total"] == 0
+    assert missing["results"] == []
+
+
 def test_one_court_returns_only_its_decisions(client: TestClient) -> None:
     body = search(client, tribunal="STJ")
 
     assert identifiers(body) == STJ
     assert body["total"] == len(STJ)
     assert {result["court"] for result in body["results"]} == {"STJ"}
+
+
+@pytest.mark.parametrize(
+    ("parameter", "value"),
+    [
+        ("orgao_julgador", "1ª TURMA CÍVEL"),
+        ("relator", "ALFEU MACHADO"),
+        ("classe_cnj", 198),
+    ],
+)
+def test_duplicate_values_do_not_change_results_or_indicator_totals(
+    client: TestClient, parameter: str, value: str | int
+) -> None:
+    for path in (
+        "/decisions",
+        "/indicators/volume-by-court",
+        "/indicators/outcome-share",
+    ):
+        once = client.get(path, params={"q": "dano moral", parameter: value})
+        repeated = client.get(
+            path, params={"q": "dano moral", parameter: [value, value]}
+        )
+        assert once.status_code == repeated.status_code == 200
+        assert once.json()["total"] > 0
+        assert repeated.json() == once.json()
+
+
+@pytest.mark.parametrize(
+    ("params", "expected"),
+    [
+        ({"orgao_julgador": "1ª TURMA CÍVEL"}, {"1000001"}),
+        ({"relator": "ALFEU MACHADO"}, {"1000003"}),
+        ({"classe_cnj": 198}, {"1000001"}),
+        ({"classe_cnj": [198, 460, 198]}, {"1000001", "1000003"}),
+        ({"classe_cnj": [198, 999999999]}, {"1000001"}),
+        ({"classe_cnj": 999999999}, set()),
+        ({"orgao_julgador": "INEXISTENTE"}, set()),
+        ({"relator": "INEXISTENTE"}, set()),
+        ({"classe_cnj": 198, "relator": "ALFEU MACHADO"}, set()),
+        (
+            {
+                "classe_cnj": [198, 460],
+                "orgao_julgador": "1ª TURMA CÍVEL",
+                "relator": "ANA CANTARINO",
+                "tribunal": "TJDFT",
+                "date_from": "2026-03-10",
+                "date_to": "2026-03-10",
+                "published_from": "2026-03-15",
+                "published_to": "2026-03-15",
+            },
+            {"1000001"},
+        ),
+        ({"q": "usucapiao", "classe_cnj": 198}, set()),
+    ],
+)
+def test_all_three_filters_narrow_search_and_indicators_together(
+    client: TestClient, params: dict[str, Any], expected: set[str]
+) -> None:
+    for order in ("date", "relevance"):
+        body = search(client, order=order, **params)
+        assert identifiers(body) == expected
+        assert body["total"] == len(expected)
+        if expected:
+            page = search(client, order=order, page_size=1, page=2, **params)
+            assert page["total"] == len(expected)
+            assert len(page["results"]) == max(0, len(expected) - 1)
+
+    for path in ("/indicators/volume-by-court", "/indicators/outcome-share"):
+        response = client.get(path, params={"q": "dano moral", **params})
+        assert response.status_code == 200, response.text
+        indicator = response.json()
+        assert indicator["total"] == len(expected)
+        if "courts" in indicator:
+            assert sum(c["decisions"] for c in indicator["courts"]) == len(expected)
+
+
+@pytest.mark.parametrize(
+    "path", ["/decisions", "/indicators/volume-by-court", "/indicators/outcome-share"]
+)
+@pytest.mark.parametrize("value", ["abc", "198.5", ""])
+def test_invalid_class_codes_are_refused(
+    client: TestClient, path: str, value: str
+) -> None:
+    response = client.get(path, params={"q": "dano moral", "classe_cnj": value})
+    assert response.status_code == 422
 
 
 def test_several_courts_return_their_union(client: TestClient) -> None:

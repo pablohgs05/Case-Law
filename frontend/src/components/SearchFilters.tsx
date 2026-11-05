@@ -1,4 +1,6 @@
 import { Check } from '@phosphor-icons/react';
+import FilterChoices from './FilterChoices';
+import type { FilterOptionsList } from '../search/useFilterOptions';
 
 import type { CourtsList } from '../search/useCourts';
 import type { FilterErrors, SearchFilterValues } from '../search/filters';
@@ -94,6 +96,7 @@ type SearchFiltersProps = {
   hidden: boolean;
   disabled?: boolean;
   courts: CourtsList;
+  filterOptions: FilterOptionsList;
 };
 
 function SearchFilters({
@@ -104,6 +107,7 @@ function SearchFilters({
   hidden,
   disabled = false,
   courts: { state: courtsState, retry },
+  filterOptions,
 }: SearchFiltersProps) {
   const toggleCourt = (abbreviation: string) => {
     const courts = values.courts.includes(abbreviation)
@@ -171,6 +175,57 @@ function SearchFilters({
         )}
       </fieldset>
 
+      <p className="filter-state">
+        As opções abrangem todos os tribunais. Trocar tribunais mantém as seleções; combinações
+        incompatíveis podem retornar zero decisões. Revise ou remova filtros nesse caso.
+      </p>
+      {filterOptions.state.status === 'loading' && (
+        <p className="filter-state" role="status">
+          Carregando opções de filtros...
+        </p>
+      )}
+      {filterOptions.state.status === 'failed' && (
+        <div className="filter-state filter-state--error" role="alert">
+          <p>
+            Não foi possível carregar as opções de órgão julgador, relator e classe processual. Você
+            pode pesquisar sem esses filtros.
+          </p>
+          <button
+            type="button"
+            className="search-state__retry"
+            disabled={disabled}
+            onClick={filterOptions.retry}
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+      {filterOptions.state.status === 'loaded' && (
+        <div className="filter-choice-groups">
+          <FilterChoices
+            legend="Órgão julgador"
+            options={filterOptions.state.options.judging_bodies}
+            selected={values.judgingBodies}
+            onChange={(judgingBodies) => onChange({ ...values, judgingBodies })}
+            disabled={disabled}
+          />
+          <FilterChoices
+            legend="Relator"
+            options={filterOptions.state.options.reporting_judges}
+            selected={values.reportingJudges}
+            onChange={(reportingJudges) => onChange({ ...values, reportingJudges })}
+            disabled={disabled}
+            searchable
+          />
+          <FilterChoices
+            legend="Classe processual"
+            options={filterOptions.state.options.procedural_classes}
+            selected={values.proceduralClasses}
+            onChange={(proceduralClasses) => onChange({ ...values, proceduralClasses })}
+            disabled={disabled}
+          />
+        </div>
+      )}
       <div className="date-groups">
         <DateRangeGroup
           id={`${id}-judged`}

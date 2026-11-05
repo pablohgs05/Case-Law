@@ -7,10 +7,17 @@ if [ -f .env ] && ! grep -q "^FRONTEND_BIND=" .env; then
     printf 'FRONTEND_BIND=%s\n' "$(tailscale ip -4)" >> .env
 fi
 
+# Minted here and never anywhere else: a key that travels through the
+# repository or the workflow is a key the sessions are no longer worth.
+if [ -f .env ] && ! grep -q "^SESSION_SECRET=" .env; then
+    printf 'SESSION_SECRET=%s\n' "$(openssl rand -hex 32)" >> .env
+fi
+
 if [ ! -f .env ]; then
     umask 077
     {
         printf 'POSTGRES_PASSWORD=%s\n' "$(openssl rand -hex 24)"
+        printf 'SESSION_SECRET=%s\n' "$(openssl rand -hex 32)"
         printf 'BACKEND_BIND=%s\n' "$(tailscale ip -4)"
         printf 'FRONTEND_BIND=%s\n' "$(tailscale ip -4)"
     } > .env

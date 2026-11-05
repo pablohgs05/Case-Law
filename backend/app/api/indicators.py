@@ -9,12 +9,16 @@ writes, never the courts themselves.
 from datetime import date, datetime
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from psycopg import Connection
 from psycopg.rows import DictRow
 from pydantic import BaseModel, Field
 
-from app.api.decisions import MATCH, SEARCH_RESPONSES, _narrowing
+from app.api.decisions import (
+    MATCH,
+    SEARCH_RESPONSES,
+    _narrowing,
+)
 from app.db import get_connection
 from app.errors import NOT_PUBLISHED, UNAVAILABLE
 
@@ -212,6 +216,34 @@ def read_volume_by_court(
         list[str] | None,
         Query(description="The same court filter the search takes."),
     ] = None,
+    orgao_julgador: Annotated[
+        list[str] | None,
+        Query(description="The same judging-body filter the search takes."),
+    ] = None,
+    relator: Annotated[
+        list[str] | None,
+        Query(description="The same reporting-judge filter the search takes."),
+    ] = None,
+    classe_cnj: Annotated[
+        list[int] | None,
+        Query(
+            description="The same repeatable CNJ class filter the search takes.",
+            examples=[[198], [198, 213]],
+        ),
+    ] = None,
+    resultado: Annotated[
+        list[str] | None,
+        Query(
+            description=(
+                "Exact outcome values recorded by `/indicators/outcome-share`: "
+                "`negado`, `provido`, or `parcialmente_provido`. Repeat for OR "
+                "within this field; other filters combine using AND. Blank and "
+                "repeated values are ignored. Decisions without an outcome do "
+                "not match; unknown values return no matches."
+            ),
+            examples=[["negado"], ["provido", "parcialmente_provido"]],
+        ),
+    ] = None,
     date_from: Annotated[date | None, Query(description="Judged on or after.")] = None,
     date_to: Annotated[date | None, Query(description="Judged on or before.")] = None,
     published_from: Annotated[
@@ -230,7 +262,16 @@ def read_volume_by_court(
     an error: no court is the honest answer to a question with no decisions.
     """
     filters, parameters = _narrowing(
-        q, tribunal, date_from, date_to, published_from, published_to
+        q,
+        tribunal,
+        date_from,
+        date_to,
+        published_from,
+        published_to,
+        orgao_julgador,
+        relator,
+        classe_cnj,
+        resultado,
     )
 
     with connection.cursor() as cursor:
@@ -244,6 +285,428 @@ def read_volume_by_court(
         for row in rows
     ]
     return VolumeByCourt(total=sum(c.decisions for c in courts), courts=courts)
+
+
+# LEFT JOIN against generate_series so periods without decisions inside the
+# interval are not omitted, which would draw false continuity on the chart.
+# The bucket unit (month, quarter, or year) adapts to the cut's amplitude unless
+# explicitly chosen.
+PERIOD_VOLUME_SQL = f"""
+WITH bounds AS (
+    SELECT
+        MIN(d.data_referencia) AS inicio_raw,
+        MAX(d.data_referencia) AS fim_raw
+    FROM core.decisao AS d
+    WHERE {MATCH}{{filters}}
+),
+config AS (
+    SELECT
+        CASE
+            WHEN %(granularity)s::text IS NOT NULL THEN %(granularity)s::text
+            WHEN inicio_raw IS NULL THEN 'month'
+            WHEN fim_raw - inicio_raw <= 1096 THEN 'month'
+            WHEN fim_raw - inicio_raw <= 3653 THEN 'quarter'
+            ELSE 'year'
+        END AS step_unit,
+        CASE
+            WHEN COALESCE(%(granularity)s::text, CASE WHEN fim_raw - inicio_raw <= 1096 THEN 'month' WHEN fim_raw - inicio_raw <= 3653 THEN 'quarter' ELSE 'year' END) = 'year' THEN '1 year'::interval
+            WHEN COALESCE(%(granularity)s::text, CASE WHEN fim_raw - inicio_raw <= 1096 THEN 'month' WHEN fim_raw - inicio_raw <= 3653 THEN 'quarter' ELSE 'year' END) = 'quarter' THEN '3 months'::interval
+            ELSE '1 month'::interval
+        END AS step_interval,
+        inicio_raw,
+        fim_raw
+    FROM bounds
+),
+contagens AS (
+    SELECT
+        date_trunc(c.step_unit, d.data_referencia)::date AS periodo,
+        COUNT(*) AS decisoes
+    FROM core.decisao AS d
+    CROSS JOIN config AS c
+    WHERE {MATCH}{{filters}}
+    GROUP BY c.step_unit, date_trunc(c.step_unit, d.data_referencia)
+),
+serie AS (
+    SELECT
+        c.step_unit,
+        generate_series(
+            date_trunc(c.step_unit, c.inicio_raw)::date,
+            date_trunc(c.step_unit, c.fim_raw)::date,
+            c.step_interval
+        )::date AS periodo
+    FROM config AS c
+    WHERE c.inicio_raw IS NOT NULL
+)
+SELECT
+    s.step_unit AS granularity,
+    s.periodo,
+    COALESCE(cnt.decisoes, 0) AS decisoes
+FROM serie AS s
+LEFT JOIN contagens AS cnt USING (periodo)
+ORDER BY s.periodo ASC
+"""
+
+Granularity = Literal["month", "quarter", "year"]
+
+INVALID_GRANULARITY = "Granularity must be 'month', 'quarter', or 'year'."
+
+GRANULARITY_ALIASES: dict[str, Granularity] = {
+    "month": "month",
+    "quarter": "quarter",
+    "year": "year",
+    "mes": "month",
+    "mês": "month",
+    "trimestre": "quarter",
+    "ano": "year",
+}
+
+
+class PeriodVolume(BaseModel):
+    period: date = Field(
+        description="The start of the period, as `YYYY-MM-DD`.",
+        examples=["2026-03-01"],
+    )
+    decisions: int = Field(
+        description="How many of the search's decisions fell in this period.",
+        examples=[120],
+    )
+
+
+class VolumeByPeriod(BaseModel):
+    total: int = Field(
+        description=(
+            "Every decision the same search matches. The periods' counts add up "
+            "to it, so a chart drawn from this cannot disagree with the number "
+            "beside the results."
+        ),
+        examples=[984824],
+    )
+    granularity: Granularity = Field(
+        description=(
+            "The period bucket used: `month`, `quarter`, or `year`. Chosen "
+            "automatically from the span of the cut when omitted."
+        ),
+        examples=["month"],
+    )
+    periods: list[PeriodVolume] = Field(
+        description=(
+            "Chronological order, earliest first. Periods with zero decisions inside "
+            "the interval appear with count 0 so continuity is preserved. Empty "
+            "when the search matches nothing."
+        )
+    )
+
+
+@router.get(
+    "/indicators/volume-by-period",
+    summary="How the search's decisions divide across time",
+    responses=SEARCH_RESPONSES,
+)
+@router.get(
+    "/indicators/volume-over-time",
+    include_in_schema=False,
+)
+def read_volume_by_period(
+    connection: Annotated[Connection[DictRow], Depends(get_connection)],
+    q: Annotated[
+        str,
+        Query(
+            min_length=2,
+            description="The same expression the search takes.",
+            examples=["dano moral"],
+        ),
+    ],
+    tribunal: Annotated[
+        list[str] | None,
+        Query(description="The same court filter the search takes."),
+    ] = None,
+    orgao_julgador: Annotated[
+        list[str] | None,
+        Query(
+            description="The same repeatable judging-body filter the search takes.",
+            examples=[["CORTE ESPECIAL"]],
+        ),
+    ] = None,
+    relator: Annotated[
+        list[str] | None,
+        Query(
+            description="The same repeatable reporting-judge filter the search takes.",
+            examples=[["ANA CANTARINO"]],
+        ),
+    ] = None,
+    classe_cnj: Annotated[
+        list[int] | None,
+        Query(
+            description="The same repeatable CNJ class filter the search takes.",
+            examples=[[198], [198, 213]],
+        ),
+    ] = None,
+    granularity: Annotated[
+        str | None,
+        Query(
+            description=(
+                "Bucket size: `month`, `quarter`, or `year`. When omitted, "
+                "chosen automatically from the span of the cut: month up to "
+                "3 years, quarter up to 10 years, and year beyond."
+            ),
+            examples=["month", "quarter", "year"],
+        ),
+    ] = None,
+    resultado: Annotated[
+        list[str] | None,
+        Query(
+            description=(
+                "Exact outcome values recorded by `/indicators/outcome-share`: "
+                "`negado`, `provido`, or `parcialmente_provido`. Repeat for OR "
+                "within this field; other filters combine using AND. Blank and "
+                "repeated values are ignored. Decisions without an outcome do "
+                "not match; unknown values return no matches."
+            ),
+            examples=[["negado"], ["provido", "parcialmente_provido"]],
+        ),
+    ] = None,
+    date_from: Annotated[date | None, Query(description="Judged on or after.")] = None,
+    date_to: Annotated[date | None, Query(description="Judged on or before.")] = None,
+    published_from: Annotated[
+        date | None, Query(description="Published on or after.")
+    ] = None,
+    published_to: Annotated[
+        date | None, Query(description="Published on or before.")
+    ] = None,
+) -> VolumeByPeriod:
+    """
+    The same decisions the search would return, counted by period.
+
+    It takes the search's parameters and narrows the same way, from the same
+    builder, so the chart and the results can never describe different sets. A
+    search that matches nothing answers an empty list and a total of zero, not
+    an error. The bucket size adapts to the cut's amplitude (month for up to 3
+    years, quarter for up to 10, year beyond) unless a specific granularity is
+    requested. Periods with zero decisions inside the interval are kept with
+    count 0 so the timeline preserves visual continuity.
+    """
+    normalized_granularity: Granularity | None = None
+    if granularity is not None:
+        cleaned = granularity.strip().lower()
+        if cleaned not in GRANULARITY_ALIASES:
+            raise HTTPException(status_code=400, detail=INVALID_GRANULARITY)
+        normalized_granularity = GRANULARITY_ALIASES[cleaned]
+
+    filters, parameters = _narrowing(
+        q,
+        tribunal,
+        date_from,
+        date_to,
+        published_from,
+        published_to,
+        orgao_julgador,
+        relator,
+        classe_cnj,
+        resultado,
+    )
+    parameters["granularity"] = normalized_granularity
+
+    with connection.cursor() as cursor:
+        cursor.execute(PERIOD_VOLUME_SQL.format(filters=filters), parameters)
+        rows = cursor.fetchall()
+
+    if not rows:
+        return VolumeByPeriod(
+            total=0,
+            granularity=normalized_granularity or "month",
+            periods=[],
+        )
+
+    resolved_granularity: Granularity = rows[0]["granularity"]
+    periods = [
+        PeriodVolume(period=row["periodo"], decisions=row["decisoes"]) for row in rows
+    ]
+    return VolumeByPeriod(
+        total=sum(p.decisions for p in periods),
+        granularity=resolved_granularity,
+        periods=periods,
+    )
+
+
+OUTCOME_SQL = f"""
+SELECT
+    d.resultado  AS resultado,
+    COUNT(*)     AS decisoes
+FROM core.decisao AS d
+WHERE {MATCH}{{filters}}
+GROUP BY d.resultado
+"""
+
+# Zeroed rather than dropped: a category missing from the cut would take its
+# slice off the chart, and a reader cannot tell an absent slice from one nobody
+# drew.
+OUTCOMES = ("negado", "provido", "parcialmente_provido")
+
+
+class OutcomeCount(BaseModel):
+    outcome: str = Field(
+        description="The reading, as the model records it.",
+        examples=["negado"],
+    )
+    decisions: int = Field(
+        description="How many of the search's decisions were read this way.",
+        examples=[752293],
+    )
+    share: float = Field(
+        description=(
+            "Percentage over `classified`, not over `total`. Rounded to one "
+            "decimal, so the counts are what add up, not these."
+        ),
+        examples=[75.9],
+    )
+
+
+class OutcomeShare(BaseModel):
+    total: int = Field(
+        description=(
+            "Every decision the same search matches, read or not. The counts "
+            "below never add up to it on their own."
+        ),
+        examples=[1788],
+    )
+    classified: int = Field(
+        description=(
+            "How many of them the dispositive stated an outcome for. This is "
+            "the denominator of every `share`, and the reason it travels: "
+            "a percentage of a part of the cut reads as a percentage of the "
+            "cut unless the reader is told otherwise."
+        ),
+        examples=[1715],
+    )
+    unclassified: int = Field(
+        description=(
+            "The rest, which the court decided but not as an appeal on its "
+            "merits — a conflict of competence, a prejudiced appeal, an "
+            "extinction. `classified` and this add up to `total`."
+        ),
+        examples=[73],
+    )
+    outcomes: list[OutcomeCount] = Field(
+        description=(
+            "Commonest first, and always the three the model can record, zero "
+            "included. Empty only when the search matches nothing."
+        )
+    )
+
+
+@router.get(
+    "/indicators/outcome-share",
+    summary="How the search's decisions divide between the appeal outcomes",
+    responses=SEARCH_RESPONSES,
+)
+def read_outcome_share(
+    connection: Annotated[Connection[DictRow], Depends(get_connection)],
+    q: Annotated[
+        str,
+        Query(
+            min_length=2,
+            description="The same expression the search takes.",
+            examples=["prescrição intercorrente"],
+        ),
+    ],
+    tribunal: Annotated[
+        list[str] | None,
+        Query(description="The same court filter the search takes."),
+    ] = None,
+    orgao_julgador: Annotated[
+        list[str] | None,
+        Query(
+            description="The same repeatable judging-body filter the search takes.",
+            examples=[["CORTE ESPECIAL"]],
+        ),
+    ] = None,
+    relator: Annotated[
+        list[str] | None,
+        Query(
+            description="The same repeatable reporting-judge filter the search takes.",
+            examples=[["ANA CANTARINO"]],
+        ),
+    ] = None,
+    classe_cnj: Annotated[
+        list[int] | None,
+        Query(
+            description="The same repeatable CNJ class filter the search takes.",
+            examples=[[198], [198, 213]],
+        ),
+    ] = None,
+    resultado: Annotated[
+        list[str] | None,
+        Query(
+            description=(
+                "Exact outcome values recorded by `/indicators/outcome-share`: "
+                "`negado`, `provido`, or `parcialmente_provido`. Repeat for OR "
+                "within this field; other filters combine using AND. Blank and "
+                "repeated values are ignored. Decisions without an outcome do "
+                "not match; unknown values return no matches."
+            ),
+            examples=[["negado"], ["provido", "parcialmente_provido"]],
+        ),
+    ] = None,
+    date_from: Annotated[date | None, Query(description="Judged on or after.")] = None,
+    date_to: Annotated[date | None, Query(description="Judged on or before.")] = None,
+    published_from: Annotated[
+        date | None, Query(description="Published on or after.")
+    ] = None,
+    published_to: Annotated[
+        date | None, Query(description="Published on or before.")
+    ] = None,
+) -> OutcomeShare:
+    """
+    The same decisions the search would return, counted by what the court
+    decided.
+
+    It narrows from the builder the search itself uses, so the two can never
+    describe different sets. A search that matches nothing answers an empty
+    list and a total of zero, not an error.
+    """
+    filters, parameters = _narrowing(
+        q,
+        tribunal,
+        date_from,
+        date_to,
+        published_from,
+        published_to,
+        orgao_julgador,
+        relator,
+        classe_cnj,
+        resultado,
+    )
+
+    with connection.cursor() as cursor:
+        cursor.execute(OUTCOME_SQL.format(filters=filters), parameters)
+        rows = cursor.fetchall()
+
+    counted = {row["resultado"]: row["decisoes"] for row in rows}
+    total = sum(counted.values())
+
+    if total == 0:
+        return OutcomeShare(total=0, classified=0, unclassified=0, outcomes=[])
+
+    unclassified = counted.get(None, 0)
+    classified = total - unclassified
+
+    outcomes = [
+        OutcomeCount(
+            outcome=name,
+            decisions=counted.get(name, 0),
+            share=round(counted.get(name, 0) / classified * 100, 1)
+            if classified
+            else 0.0,
+        )
+        for name in OUTCOMES
+    ]
+    outcomes.sort(key=lambda item: (-item.decisions, item.outcome))
+    return OutcomeShare(
+        total=total,
+        classified=classified,
+        unclassified=unclassified,
+        outcomes=outcomes,
+    )
 
 
 # One pass, grouped, so the courts and the base cannot disagree about a period
@@ -362,3 +825,297 @@ def read_coverage(
         state=fresh.state,
         updated_at=fresh.updated_at,
     )
+
+
+# `indeterminado` is not here: it travels as its own field, the way
+# `unclassified` does above, so no share is ever computed over a guess.
+DECIDED = ("seguiu", "afastou", "distinguiu", "mencionou")
+UNDETERMINED = "indeterminado"
+
+CUT_SIZE_SQL = f"""
+SELECT COUNT(*) AS decisoes
+FROM core.decisao AS d
+WHERE {MATCH}{{filters}}
+"""
+
+# GROUPING SETS so one scan answers both levels: the per-category counts and,
+# in the row where GROUPING is 1, how many distinct decisions cite anything.
+# Summing the per-category decision counts would double a decision that cites
+# two precedents it used differently.
+ADHERENCE_SQL = f"""
+WITH recorte AS (
+    SELECT d.fonte_codigo, d.identificador_fonte
+    FROM core.decisao AS d
+    WHERE {MATCH}{{filters}}
+),
+ligada AS (
+    SELECT dp.aderencia, dp.fonte_codigo, dp.identificador_fonte
+    FROM recorte AS r
+    JOIN core.decisao_precedente AS dp
+        ON dp.fonte_codigo = r.fonte_codigo
+       AND dp.identificador_fonte = r.identificador_fonte
+)
+SELECT
+    GROUPING(aderencia) AS geral,
+    aderencia           AS aderencia,
+    COUNT(*)            AS ligacoes,
+    COUNT(DISTINCT (fonte_codigo, identificador_fonte)) AS decisoes
+FROM ligada
+GROUP BY GROUPING SETS ((aderencia), ())
+"""
+
+MOST_CITED_SQL = f"""
+WITH recorte AS (
+    SELECT d.fonte_codigo, d.identificador_fonte
+    FROM core.decisao AS d
+    WHERE {MATCH}{{filters}}
+)
+SELECT
+    dp.corte     AS corte,
+    dp.tipo      AS tipo,
+    dp.numero    AS numero,
+    p.enunciado  AS enunciado,
+    COUNT(*)     AS citacoes,
+    COUNT(DISTINCT (dp.fonte_codigo, dp.identificador_fonte)) AS decisoes
+FROM recorte AS r
+JOIN core.decisao_precedente AS dp
+    ON dp.fonte_codigo = r.fonte_codigo
+   AND dp.identificador_fonte = r.identificador_fonte
+LEFT JOIN core.precedente AS p
+    ON p.corte = dp.corte AND p.tipo = dp.tipo AND p.numero = dp.numero
+-- A citation that never said which court settled it identifies no precedent,
+-- so it cannot be ranked under one: counting a bare "Tema 793" among the
+-- STJ's would inflate that row with citations of the STF's.
+WHERE dp.corte_declarada
+GROUP BY dp.corte, dp.tipo, dp.numero, p.enunciado
+ORDER BY COUNT(*) DESC, dp.corte, dp.tipo, dp.numero
+LIMIT %(limit)s
+"""
+
+
+class AdherenceCount(BaseModel):
+    adherence: str = Field(
+        description=(
+            "`seguiu`, `afastou`, `distinguiu` or `mencionou`. The fifth the "
+            "model records, `indeterminado`, travels as `undetermined` below."
+        ),
+        examples=["seguiu"],
+    )
+    links: int = Field(
+        description="Citations in this state across the cut.", examples=[1204]
+    )
+    decisions: int = Field(
+        description=(
+            "Distinct decisions carrying at least one. These never add up to "
+            "`citing`: a decision that followed one precedent and set another "
+            "aside counts in both rows, which is why the sum is not offered."
+        ),
+        examples=[1102],
+    )
+    share: float = Field(
+        description="Percentage of `determined`, to one decimal.", examples=[70.2]
+    )
+
+
+class AdherenceShare(BaseModel):
+    decisions: int = Field(
+        description=(
+            "Every decision the same search matches. The first of three "
+            "denominators, and the one a percentage is most often mistaken "
+            "for."
+        ),
+        examples=[1788],
+    )
+    citing: int = Field(
+        description=(
+            "How many of them cite at least one precedent. The second "
+            "denominator: most of the collection cites none, so a share of the "
+            "citing decisions says nothing about the rest."
+        ),
+        examples=[497],
+    )
+    links: int = Field(
+        description=(
+            "Citations in the cut, counting a decision once per precedent it "
+            "cites. `determined` plus `undetermined` equals this."
+        ),
+        examples=[1715],
+    )
+    determined: int = Field(
+        description=(
+            "Citations the wording settled. The third denominator, and the one "
+            "every `share` is over."
+        ),
+        examples=[1301],
+    )
+    undetermined: int = Field(
+        description=(
+            "Citations whose wording decided nothing. Reported rather than "
+            "hidden: a reader who cannot see this cannot tell a strong finding "
+            "from a thin one."
+        ),
+        examples=[414],
+    )
+    adherences: list[AdherenceCount] = Field(
+        description=(
+            "Commonest first, and always the four the model can decide, zero "
+            "included. Empty only when the cut carries no citation at all."
+        )
+    )
+
+
+class MostCited(BaseModel):
+    court: str = Field(description="`STJ` or `STF`.", examples=["STJ"])
+    kind: str = Field(description="`sumula` or `tema`.", examples=["sumula"])
+    number: int = Field(description="The precedent's number.", examples=[7])
+    text: str | None = Field(
+        default=None,
+        description="What it settled, or `null` when the catalogue lacks it.",
+        examples=[
+            "A pretensão de simples reexame de prova não enseja recurso especial."
+        ],
+    )
+    citations: int = Field(
+        description="How many times the cut cites it.", examples=[612]
+    )
+    decisions: int = Field(
+        description="Distinct decisions doing the citing.", examples=[598]
+    )
+
+
+@router.get(
+    "/indicators/adherence",
+    summary="How the search's decisions used the precedents they cite",
+    responses=SEARCH_RESPONSES,
+)
+def read_adherence(
+    connection: Annotated[Connection[DictRow], Depends(get_connection)],
+    q: Annotated[
+        str,
+        Query(
+            min_length=2,
+            description="The same expression the search takes.",
+            examples=["prescrição intercorrente"],
+        ),
+    ],
+    tribunal: Annotated[
+        list[str] | None,
+        Query(description="The same court filter the search takes."),
+    ] = None,
+    date_from: Annotated[date | None, Query(description="Judged on or after.")] = None,
+    date_to: Annotated[date | None, Query(description="Judged on or before.")] = None,
+    published_from: Annotated[
+        date | None, Query(description="Published on or after.")
+    ] = None,
+    published_to: Annotated[
+        date | None, Query(description="Published on or before.")
+    ] = None,
+) -> AdherenceShare:
+    """
+    Whether the courts followed the precedents they cited, over the cut.
+
+    Three denominators travel, because confusing them produces a false
+    percentage: every decision the search matches, the ones citing a precedent
+    at all, and the citations whose wording settled the question. "70%
+    followed" is only ever true of the third.
+    """
+    filters, parameters = _narrowing(
+        q, tribunal, date_from, date_to, published_from, published_to
+    )
+
+    with connection.cursor() as cursor:
+        cursor.execute(CUT_SIZE_SQL.format(filters=filters), parameters)
+        size = cursor.fetchone()
+        decisions = size["decisoes"] if size else 0
+
+        cursor.execute(ADHERENCE_SQL.format(filters=filters), parameters)
+        rows = cursor.fetchall()
+
+    overall = next((row for row in rows if row["geral"] == 1), None)
+    counted = {row["aderencia"]: row for row in rows if row["geral"] == 0}
+
+    links = overall["ligacoes"] if overall else 0
+    citing = overall["decisoes"] if overall else 0
+    undetermined = counted[UNDETERMINED]["ligacoes"] if UNDETERMINED in counted else 0
+    determined = links - undetermined
+
+    adherences = [
+        AdherenceCount(
+            adherence=name,
+            links=counted[name]["ligacoes"] if name in counted else 0,
+            decisions=counted[name]["decisoes"] if name in counted else 0,
+            share=round(counted[name]["ligacoes"] / determined * 100, 1)
+            if determined and name in counted
+            else 0.0,
+        )
+        for name in DECIDED
+    ]
+    adherences.sort(key=lambda item: (-item.links, item.adherence))
+
+    return AdherenceShare(
+        decisions=decisions,
+        citing=citing,
+        links=links,
+        determined=determined,
+        undetermined=undetermined,
+        adherences=adherences if links else [],
+    )
+
+
+@router.get(
+    "/indicators/most-cited-precedents",
+    summary="Which precedents the search's decisions cite most",
+    responses=SEARCH_RESPONSES,
+)
+def read_most_cited(
+    connection: Annotated[Connection[DictRow], Depends(get_connection)],
+    q: Annotated[
+        str,
+        Query(
+            min_length=2,
+            description="The same expression the search takes.",
+            examples=["prescrição intercorrente"],
+        ),
+    ],
+    tribunal: Annotated[
+        list[str] | None,
+        Query(description="The same court filter the search takes."),
+    ] = None,
+    date_from: Annotated[date | None, Query(description="Judged on or after.")] = None,
+    date_to: Annotated[date | None, Query(description="Judged on or before.")] = None,
+    published_from: Annotated[
+        date | None, Query(description="Published on or after.")
+    ] = None,
+    published_to: Annotated[
+        date | None, Query(description="Published on or before.")
+    ] = None,
+    limit: Annotated[int, Query(ge=1, le=50, description="How many to return.")] = 10,
+) -> list[MostCited]:
+    """
+    The precedents the cut leans on, commonest first.
+
+    A precedent the catalogue has no entry for still ranks, with `text` null:
+    how often a court invokes something is worth knowing even when the wording
+    of it is not on hand.
+    """
+    filters, parameters = _narrowing(
+        q, tribunal, date_from, date_to, published_from, published_to
+    )
+
+    with connection.cursor() as cursor:
+        cursor.execute(
+            MOST_CITED_SQL.format(filters=filters), {**parameters, "limit": limit}
+        )
+        rows = cursor.fetchall()
+
+    return [
+        MostCited(
+            court=row["corte"],
+            kind=row["tipo"],
+            number=row["numero"],
+            text=row["enunciado"],
+            citations=row["citacoes"],
+            decisions=row["decisoes"],
+        )
+        for row in rows
+    ]

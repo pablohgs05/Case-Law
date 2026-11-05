@@ -1,7 +1,7 @@
 INSERT INTO core.decisao (
     fonte_codigo, identificador_fonte, tribunal_sigla, processo,
     orgao_julgador, relator, classe_cnj, data_julgamento, data_publicacao,
-    data_referencia, ementa, tipo_texto, decisao_texto,
+    data_referencia, ementa, tipo_texto, decisao_texto, resultado, deliberacao,
     turma_recursal, possui_inteiro_teor, url_fonte, link_valido, ementa_busca
 )
 VALUES
@@ -11,7 +11,7 @@ VALUES
     '2026-03-10',
     'DIREITO DO CONSUMIDOR. Inscrição indevida em cadastro de inadimplentes. '
     'Dano moral in re ipsa. Ação procedente. Recurso não provido.',
-    'ementa_completa', 'RECURSO NÃO PROVIDO. UNÂNIME.',
+    'ementa_completa', 'RECURSO NÃO PROVIDO. UNÂNIME.', 'negado', 'unanime',
     FALSE, TRUE, 'https://jurisdf.tjdft.jus.br/detalhes/1000001', TRUE,
     TO_TSVECTOR('portugues_sem_acento',
         'DIREITO DO CONSUMIDOR. Inscrição indevida em cadastro de inadimplentes. '
@@ -23,7 +23,7 @@ VALUES
     '2026-04-20',
     'PENAL. Usucapião extraordinário não se confunde com posse precária. '
     'Sentença mantida por seus próprios fundamentos.',
-    'ementa_completa', 'APELAÇÃO CONHECIDA E DESPROVIDA.',
+    'ementa_completa', 'APELAÇÃO CONHECIDA E DESPROVIDA.', 'negado', NULL,
     FALSE, FALSE, 'https://jurisdf.tjdft.jus.br/detalhes/1000002', FALSE,
     TO_TSVECTOR('portugues_sem_acento',
         'PENAL. Usucapião extraordinário não se confunde com posse precária. '
@@ -35,7 +35,7 @@ VALUES
     '2026-05-05',
     'CIVIL. Responsabilidade civil por falha na prestação de serviço. '
     'Dano moral configurado. Danos materiais afastados.',
-    'ementa_completa', 'RECURSO PARCIALMENTE PROVIDO.',
+    'ementa_completa', 'RECURSO PARCIALMENTE PROVIDO. MAIORIA.', 'parcialmente_provido', 'maioria',
     TRUE, TRUE, 'https://jurisdf.tjdft.jus.br/detalhes/1000003', NULL,
     TO_TSVECTOR('portugues_sem_acento',
         'CIVIL. Responsabilidade civil por falha na prestação de serviço. '
@@ -46,7 +46,7 @@ VALUES
     '3ª TURMA CÍVEL', 'JOÃO EGMONT', 1116, '2026-06-11', '2026-06-18',
     '2026-06-11',
     'PROCESSUAL CIVIL E TRIBUTÁRIO. EXECUÇÃO FISCAL. PRESCRIÇÃO INTERCORRENTE. I. CASO EM EXAME 1. Apelação interposta contra sentença que julgou extinta a execução fiscal, ao reconhecer a prescrição intercorrente após longo período de suspensão do feito sem localização de bens penhoráveis do devedor. II. QUESTÃO EM DISCUSSÃO 2. A controvérsia consiste em definir se o termo inicial da suspensão se conta da ciência da primeira diligência infrutífera ou do despacho que a determinou. III. RAZÕES DE DECIDIR 3. A prescrição intercorrente rege-se pelo artigo 40 da Lei de Execuções Fiscais, cujo prazo corre automaticamente da ciência da primeira tentativa frustrada. 4. O mero peticionamento nos autos não interrompe o prazo, conforme entendimento consolidado. IV. DISPOSITIVO 5. Apelação conhecida e desprovida, mantida a sentença por seus próprios fundamentos.',
-    'ementa_completa', 'APELAÇÃO CONHECIDA E DESPROVIDA.',
+    'ementa_completa', 'APELAÇÃO CONHECIDA E DESPROVIDA.', 'negado', NULL,
     FALSE, TRUE, 'https://jurisdf.tjdft.jus.br/detalhes/1000004', TRUE,
     TO_TSVECTOR('portugues_sem_acento',
         'PROCESSUAL CIVIL E TRIBUTÁRIO. EXECUÇÃO FISCAL. PRESCRIÇÃO INTERCORRENTE. I. CASO EM EXAME 1. Apelação interposta contra sentença que julgou extinta a execução fiscal, ao reconhecer a prescrição intercorrente após longo período de suspensão do feito sem localização de bens penhoráveis do devedor. II. QUESTÃO EM DISCUSSÃO 2. A controvérsia consiste em definir se o termo inicial da suspensão se conta da ciência da primeira diligência infrutífera ou do despacho que a determinou. III. RAZÕES DE DECIDIR 3. A prescrição intercorrente rege-se pelo artigo 40 da Lei de Execuções Fiscais, cujo prazo corre automaticamente da ciência da primeira tentativa frustrada. 4. O mero peticionamento nos autos não interrompe o prazo, conforme entendimento consolidado. IV. DISPOSITIVO 5. Apelação conhecida e desprovida, mantida a sentença por seus próprios fundamentos.')
@@ -54,7 +54,7 @@ VALUES
 INSERT INTO core.decisao (
     fonte_codigo, identificador_fonte, tribunal_sigla, processo,
     orgao_julgador, relator, classe_cnj, data_julgamento, data_publicacao,
-    data_referencia, ementa, tipo_texto, decisao_texto,
+    data_referencia, ementa, tipo_texto, decisao_texto, resultado, deliberacao,
     turma_recursal, possui_inteiro_teor, url_fonte, link_valido, ementa_busca
 )
 VALUES (
@@ -62,7 +62,7 @@ VALUES (
     '4ª TURMA CÍVEL', 'MARIA IVATÔNIA', 109, '2026-01-15', '2026-01-20',
     '2026-01-15',
     'ALIENAÇÃO FIDUCIÁRIA. Busca e apreensão. Alienação fiduciária em garantia. Mora comprovada. Apelação provida.',
-    'ementa_completa', 'RECURSO PROVIDO. UNÂNIME.',
+    'ementa_completa', 'RECURSO PROVIDO. UNÂNIME.', 'provido', 'unanime',
     FALSE, TRUE, 'https://jurisdf.tjdft.jus.br/detalhes/1000005', TRUE,
     TO_TSVECTOR('portugues_sem_acento', 'ALIENAÇÃO FIDUCIÁRIA. Busca e apreensão. Alienação fiduciária em garantia. Mora comprovada. Apelação provida.')
 );

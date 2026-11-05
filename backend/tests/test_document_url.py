@@ -1,3 +1,4 @@
+import csv
 from pathlib import Path
 
 import psycopg
@@ -83,12 +84,23 @@ def test_the_court_and_the_pattern_come_from_the_seed_not_from_the_query(
     )
 
 
-def test_the_seed_carries_a_pattern_for_every_source() -> None:
-    lines = SEED.read_text(encoding="utf-8").strip().splitlines()
+def test_the_seed_carries_a_pattern_for_every_source_of_decisions() -> None:
+    """
+    A decision's link is built by replacing `{documento}` in its source's
+    template. A source of decisions without one would hand the screen a link
+    that reaches nothing, and the screen has no way to tell.
 
-    assert len(lines) > 1, "the seed has no source"
-    for line in lines[1:]:
-        assert "{documento}" in line
+    A source that carries something other than decisions is exempt: the
+    precedent catalogue is published as whole files, with no address per
+    precedent to put in a template.
+    """
+    rows = list(csv.DictReader(SEED.read_text(encoding="utf-8").splitlines()))
+
+    assert rows, "the seed has no source"
+    de_decisoes = [row for row in rows if row["conteudo"] == "decisao"]
+    assert de_decisoes, "the seed has no source of decisions"
+    for row in de_decisoes:
+        assert "{documento}" in row["url_documento_template"], row["codigo"]
 
 
 def test_a_record_with_no_identifier_gets_no_link(

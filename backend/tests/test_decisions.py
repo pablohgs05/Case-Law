@@ -11,6 +11,7 @@ from app.api.decisions import (
     HIGHLIGHT_SQL,
     MAX_SNIPPET_WORDS,
     PAGE_SQL,
+    PRECEDENTS_SQL,
     _fallback_ementa_start,
     _normalize_highlighted_text,
     _safe_snippet,
@@ -31,6 +32,7 @@ MATCHING_ROW = {
     "turma_recursal": False,
     "url_fonte": "https://jurisdf.tjdft.jus.br/detalhes/2084700",
     "link_valido": True,
+    "deliberacao": "unanime",
     "ementa": "Ilícito contratual. Dano moral. Ação procedente. Recurso não provido.",
     "snippet": "Ilícito contratual. <mark>Dano</mark> <mark>moral</mark>.",
 }
@@ -54,6 +56,10 @@ DETAIL_ROW = {
     "data_publicacao": date(2026, 2, 26),
     "ementa": "Ementa: Direito do consumidor. Dano moral configurado.",
     "decisao_texto": "RECURSOS PARCIALMENTE PROVIDOS. UNÂNIME.",
+    "tese": (
+        "1. A falha na prestação do serviço gera dano moral in re ipsa. "
+        "2. O valor da indenização observa a razoabilidade."
+    ),
     "possui_inteiro_teor": True,
 }
 
@@ -85,6 +91,7 @@ class FakeDatabase:
     def __init__(self, total: int = 1, found: bool = True) -> None:
         self.total = total
         self.found = found
+        self.precedents: list[dict[str, Any]] = []
         self.statements: list[str] = []
         self.parameters: list[dict[str, Any]] = []
         self.answer: Callable[[str, dict[str, Any]], list[dict[str, Any]]] = (
@@ -102,6 +109,8 @@ class FakeDatabase:
             return [DETAIL_ROW] if self.found else []
         if statement == HIGHLIGHT_SQL:
             return [{"highlighted": "Ementa: <mark>Dano</mark> moral configurado."}]
+        if statement == PRECEDENTS_SQL:
+            return self.precedents
         raise AssertionError(f"unexpected statement: {statement}")
 
     def cursor(self) -> FakeCursor:

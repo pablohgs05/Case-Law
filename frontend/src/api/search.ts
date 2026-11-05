@@ -1,4 +1,5 @@
 import { apiBaseUrl, assertApiConfiguration } from './client';
+import { apiHeaders } from './token';
 
 export type SearchDecisionMatch = {
   source: string;
@@ -13,6 +14,11 @@ export type SearchDecisionMatch = {
   small_claims: string | null;
   source_url: string;
   source_url_reachable: boolean | null;
+  source_url_shared: boolean;
+  // What the court itself settled. Empty on most of the collection, and an
+  // API published before the field existed sends nothing at all.
+  thesis?: string[];
+  deliberation: string | null;
   snippet: string;
 };
 
@@ -36,6 +42,11 @@ export type SearchOrder = 'relevance' | 'date';
 
 export const DEFAULT_ORDER: SearchOrder = 'relevance';
 
+// Which indicator the reader arrived from. The API cuts the snippet around
+// what produced that classification instead of around what was typed; absent,
+// it keeps showing the search terms, which is right in a plain search.
+export type Highlight = 'resultado' | 'aderencia';
+
 export type SearchParams = {
   q: string;
   page?: number;
@@ -43,6 +54,12 @@ export type SearchParams = {
   // Court abbreviations. Sent as one `tribunal` per court, which the API reads
   // as "any of these".
   tribunal?: string[];
+  // Exact option values and numeric CNJ codes. Repeated values combine with OR.
+  orgao_julgador?: string[];
+  relator?: string[];
+  classe_cnj?: number[];
+  resultado?: string[];
+  highlight?: Highlight;
   // `YYYY-MM-DD`, passed through untouched.
   date_from?: string;
   date_to?: string;
@@ -75,7 +92,10 @@ export async function readDetail(response: Response): Promise<string | null> {
   }
 }
 
-export async function searchDecisions(params: SearchParams): Promise<SearchDecisionResponse> {
+export async function searchDecisions(
+  params: SearchParams,
+  options: { signal?: AbortSignal } = {},
+): Promise<SearchDecisionResponse> {
   assertApiConfiguration();
 
   const url = new URL(`${apiBaseUrl}/decisions`, window.location.origin);
@@ -89,8 +109,16 @@ export async function searchDecisions(params: SearchParams): Promise<SearchDecis
     url.searchParams.set('page_size', String(params.page_size));
   }
 
-  for (const court of params.tribunal ?? []) {
-    url.searchParams.append('tribunal', court);
+  for (const name of [
+    'tribunal',
+    'orgao_julgador',
+    'relator',
+    'classe_cnj',
+    'resultado',
+  ] as const) {
+    for (const value of params[name] ?? []) {
+      url.searchParams.append(name, String(value));
+    }
   }
 
   for (const name of ['date_from', 'date_to', 'published_from', 'published_to'] as const) {
@@ -104,11 +132,14 @@ export async function searchDecisions(params: SearchParams): Promise<SearchDecis
     url.searchParams.set('order', params.order);
   }
 
+  if (params.highlight) {
+    url.searchParams.set('highlight', params.highlight);
+  }
+
   const response = await fetch(url.toString(), {
     method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
+    signal: options.signal,
+    headers: apiHeaders(),
   });
 
   if (!response.ok) {

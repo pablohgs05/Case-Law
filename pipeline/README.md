@@ -82,6 +82,38 @@ Field names are preserved exactly as the API returns them, camel case included,
 which is why the SQL models quote `"dataJulgamento"`. The raw layer mirrors the
 source; renaming belongs to the transformation.
 
+### Doctrine, from the BDJur
+
+```bash
+uv run python -m sources.doutrina
+```
+
+Harvests the STJ's digital library by OAI-PMH into `raw.doutrina_bdjur`: author,
+title, where it came out, and the link back. Never the text of the work — open
+access is permission to read, not to redistribute.
+
+Only `col_2011_8`, Artigos de Acesso Aberto. The library keeps Acesso Restrito
+in a separate collection, `col_2011_9`, and that separation is what settles the
+scope: the classification is the STJ's, not ours. Where a record carries
+`dc:rights` the field decides, and it is an allow list — one work filed in the
+open collection declares `Restricted access`, and it does not enter `core`.
+
+Records are written with `merge` on repository plus OAI identifier, and the
+cursor is the record's own datestamp, which is what the protocol's `from`
+compares. A second run asks the library only for what changed since the first.
+
+```bash
+uv run python -m sources.doutrina --de ~/paginas-bdjur
+```
+
+**The endpoint refuses automated access.** It answered on 05/10/2026 and has
+answered HTTP 403 since 24/10/2026, by a measure of the STJ's own security
+coordination; harvesting access has to be asked for at the address the protocol
+publishes, `bdjur@stj.jus.br`. Until it is granted, `--de` reads pages saved by
+hand from a browser — the same records, rendered rather than served. Both paths
+parse the same `oai_dc` block with the same code, and a test asserts they agree
+field by field.
+
 ## Checking the links
 
 Each decision carries a link back to the court. Whether that link still reaches
@@ -147,6 +179,7 @@ Everything comes from the environment. Nothing is hardcoded.
 | `TJDFT_SUBJECT` | TJDFT connector | none — every subject |
 | `TJDFT_MAX_PAGES` | TJDFT connector | none — until the source runs out |
 | `TJDFT_REQUEST_INTERVAL` | TJDFT connector | `0.5` seconds between requests |
+| `BDJUR_PAGINAS` | BDJur connector | none — reads the endpoint, same as `--de` |
 | `VERIFY_MAX` | link check | `1000` records per run |
 | `VERIFY_INTERVAL` | link check | `0.5` seconds between requests |
 

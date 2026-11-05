@@ -10,10 +10,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Reject pull requests that do not come from dev
-        if: github.head_ref != 'dev'
+      # `dev` carries the code into both. Documentation changes nothing that
+      # runs, so a `docs/` branch reaches `main` on its own — but never
+      # `producao`, which is what is deployed.
+      - name: Reject pull requests from a branch that may not open one
+        if: >-
+          github.head_ref != 'dev' &&
+          !(github.base_ref == 'main' && startsWith(github.head_ref, 'docs/'))
         run: |
           echo "::error::Pull requests into '${{ github.base_ref }}' must come from 'dev'."
+          echo "Into 'main', a branch named 'docs/...' may open one as well."
           echo "This one comes from '${{ github.head_ref }}'."
           exit 1
 

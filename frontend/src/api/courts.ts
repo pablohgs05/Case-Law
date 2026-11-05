@@ -1,4 +1,5 @@
 import { apiBaseUrl, assertApiConfiguration } from './client';
+import { apiHeaders } from './token';
 
 export type Court = {
   // The value the search's `tribunal` parameter takes, exactly as sent back.
@@ -17,9 +18,7 @@ export async function listCourts(): Promise<Court[]> {
 
   const response = await fetch(url.toString(), {
     method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
+    headers: apiHeaders(),
   });
 
   if (!response.ok) {

@@ -1,4 +1,5 @@
 import { apiBaseUrl, assertApiConfiguration } from './client';
+import { apiHeaders } from './token';
 import { readDetail, SearchRequestError, type SearchParams } from './search';
 
 // What `/indicators/coverage` answers: the base as a whole, never a search. It
@@ -50,11 +51,49 @@ export type VolumeByCourt = {
   courts: CourtVolume[];
 };
 
+export type Granularity = 'month' | 'quarter' | 'year';
+
+// What `/indicators/volume-by-period` answers: the search's own cut, counted by
+// period (month, quarter, or year). The granularity adapts to the cut's amplitude
+// unless explicitly specified. Months/periods with zero decisions inside the
+// interval appear with count 0 so continuity is preserved.
+export type PeriodVolume = {
+  period: string;
+  decisions: number | null;
+};
+
+export type VolumeByPeriod = {
+  total: number | null;
+  granularity: Granularity | null;
+  periods: PeriodVolume[];
+};
+
+export type VolumePeriodParams = VolumeParams & {
+  granularity?: Granularity | string;
+};
+
 // What `/indicators/last-update` answers: when the collection was last
 // refreshed. It is the base's date, one for every court, not the cut's.
 export type LastUpdate = {
   state: LoadState | null;
   updated_at: string | null;
+};
+
+// What `/indicators/outcome-share` answers: the same cut, counted by what the
+// court decided. `classified` is the denominator of every `share`, and
+// `unclassified` the rest — decisions the court did settle, but not as an
+// appeal on its merits.
+export type OutcomeCount = {
+  outcome: string;
+  decisions: number | null;
+  share: number | null;
+};
+
+export type OutcomeShare = {
+  total: number | null;
+  classified: number | null;
+  unclassified: number | null;
+  outcomes: OutcomeCount[];
 };
 
 // An indicator that takes no search parameter failed: the coverage, or the
@@ -120,9 +159,7 @@ export async function getCoverage(options: { signal?: AbortSignal } = {}): Promi
 
   const response = await fetch(url.toString(), {
     method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
+    headers: apiHeaders(),
     signal: options.signal,
   });
 
@@ -138,8 +175,39 @@ export async function getCoverage(options: { signal?: AbortSignal } = {}): Promi
 // turning a page or re-sorting can never change a count.
 export type VolumeParams = Pick<
   SearchParams,
-  'q' | 'tribunal' | 'date_from' | 'date_to' | 'published_from' | 'published_to'
+  | 'q'
+  | 'tribunal'
+  | 'orgao_julgador'
+  | 'relator'
+  | 'classe_cnj'
+  | 'date_from'
+  | 'date_to'
+  | 'published_from'
+  | 'published_to'
 >;
+
+// The cut as the indicators take it, the same for every one of them. Exported
+// because every indicator module builds the same URL, and two copies of this
+// would drift the day a filter is added.
+export function cutUrl(path: string, params: VolumeParams): URL {
+  const url = new URL(`${apiBaseUrl}${path}`, window.location.origin);
+  url.searchParams.set('q', params.q);
+
+  for (const name of ['tribunal', 'orgao_julgador', 'relator', 'classe_cnj'] as const) {
+    for (const value of params[name] ?? []) {
+      url.searchParams.append(name, String(value));
+    }
+  }
+
+  for (const name of ['date_from', 'date_to', 'published_from', 'published_to'] as const) {
+    const value = params[name];
+    if (value) {
+      url.searchParams.set(name, value);
+    }
+  }
+
+  return url;
+}
 
 function readCourtVolume(value: unknown): CourtVolume | null {
   const court = (value ?? {}) as Record<string, unknown>;
@@ -171,25 +239,9 @@ export async function getVolumeByCourt(
 ): Promise<VolumeByCourt> {
   assertApiConfiguration();
 
-  const url = new URL(`${apiBaseUrl}/indicators/volume-by-court`, window.location.origin);
-  url.searchParams.set('q', params.q);
-
-  for (const court of params.tribunal ?? []) {
-    url.searchParams.append('tribunal', court);
-  }
-
-  for (const name of ['date_from', 'date_to', 'published_from', 'published_to'] as const) {
-    const value = params[name];
-    if (value) {
-      url.searchParams.set(name, value);
-    }
-  }
-
-  const response = await fetch(url.toString(), {
+  const response = await fetch(cutUrl('/indicators/volume-by-court', params).toString(), {
     method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
+    headers: apiHeaders(),
     signal: options.signal,
   });
 
@@ -198,6 +250,100 @@ export async function getVolumeByCourt(
   }
 
   return readVolume(await response.json());
+}
+
+function readPeriod(value: unknown): PeriodVolume | null {
+  const row = (value ?? {}) as Record<string, unknown>;
+  const period = text(row.period);
+
+  if (!period) {
+    return null;
+  }
+
+  return { period, decisions: count(row.decisions) };
+}
+
+const GRANULARITIES: readonly string[] = ['month', 'quarter', 'year'];
+
+export function readVolumeByPeriod(body: unknown): VolumeByPeriod {
+  const raw = (body ?? {}) as Record<string, unknown>;
+  const granularity = text(raw.granularity);
+
+  return {
+    total: count(raw.total),
+    granularity:
+      granularity && GRANULARITIES.includes(granularity) ? (granularity as Granularity) : null,
+    periods: Array.isArray(raw.periods)
+      ? raw.periods.map(readPeriod).filter((row): row is PeriodVolume => row !== null)
+      : [],
+  };
+}
+
+export async function getVolumeByPeriod(
+  params: VolumePeriodParams,
+  options: { signal?: AbortSignal } = {},
+): Promise<VolumeByPeriod> {
+  assertApiConfiguration();
+
+  const url = cutUrl('/indicators/volume-by-period', params);
+  if (params.granularity) {
+    url.searchParams.set('granularity', params.granularity);
+  }
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: apiHeaders(),
+    signal: options.signal,
+  });
+
+  if (!response.ok) {
+    throw new SearchRequestError(response.status, await readDetail(response));
+  }
+
+  return readVolumeByPeriod(await response.json());
+}
+
+function readOutcomeCount(value: unknown): OutcomeCount | null {
+  const row = (value ?? {}) as Record<string, unknown>;
+  const outcome = text(row.outcome);
+
+  if (!outcome) {
+    return null;
+  }
+
+  return { outcome, decisions: count(row.decisions), share: count(row.share) };
+}
+
+export function readOutcomeShare(body: unknown): OutcomeShare {
+  const raw = (body ?? {}) as Record<string, unknown>;
+
+  return {
+    total: count(raw.total),
+    classified: count(raw.classified),
+    unclassified: count(raw.unclassified),
+    outcomes: Array.isArray(raw.outcomes)
+      ? raw.outcomes.map(readOutcomeCount).filter((row): row is OutcomeCount => row !== null)
+      : [],
+  };
+}
+
+export async function getOutcomeShare(
+  params: VolumeParams,
+  options: { signal?: AbortSignal } = {},
+): Promise<OutcomeShare> {
+  assertApiConfiguration();
+
+  const response = await fetch(cutUrl('/indicators/outcome-share', params).toString(), {
+    method: 'GET',
+    headers: apiHeaders(),
+    signal: options.signal,
+  });
+
+  if (!response.ok) {
+    throw new SearchRequestError(response.status, await readDetail(response));
+  }
+
+  return readOutcomeShare(await response.json());
 }
 
 export function readLastUpdate(body: unknown): LastUpdate {
@@ -219,9 +365,7 @@ export async function getLastUpdate(options: { signal?: AbortSignal } = {}): Pro
 
   const response = await fetch(url.toString(), {
     method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
+    headers: apiHeaders(),
     signal: options.signal,
   });
 

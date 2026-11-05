@@ -11,6 +11,7 @@ const base: Parameters<typeof DecisionResultCard>[0]['decision'] = {
   decided_on: '2026-06-11',
   source_url: 'https://jurisdf.tjdft.jus.br/detalhes/2119440',
   source_url_reachable: true,
+  deliberation: 'unanime',
   snippet: 'Trecho qualquer.',
 };
 

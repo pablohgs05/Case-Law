@@ -105,3 +105,64 @@ def split(ementa: str | None) -> StructuredEmenta | None:
         reasoning=sections[2],
         ruling=sections[3],
     )
+
+
+# Opening noise the courts leave around the thesis: quotes, underscore rules,
+# dashes. The closing set keeps the full stop, which belongs to the court.
+# Both carry \xa0 — the non-breaking space the courts use when laying the page
+# out. Without it the strip halts at the first one and the noise survives.
+BLANK = " \t\r\n\xa0\u2007\u202f\u200b"
+OPENING = BLANK + "\"“”'_-–—."
+CLOSING = BLANK + "\"“”'_"
+
+# A candidate item marker. On its own it is not enough: "Súmula 7." and "Lei n.
+# 4.886/1965." match it too, and shred the thesis mid-sentence.
+_MARKER = re.compile(
+    r"(?:(?<=^)|(?<=[.;:)]\s)|(?<=[.;:)]\xa0))\s*(\d{1,2}|[a-z])\s*[.)]\s+"
+)
+
+
+def _in_sequence(markers: list[re.Match[str]]) -> list[re.Match[str]]:
+    """
+    Only the markers that continue the count, 1,2,3 or a,b,c.
+
+    A loose number inside a sentence matches the pattern but does not continue
+    the sequence, so it falls out. Measured over the collection, keeping every
+    match turned four theses into eleven fragments.
+    """
+    kept: list[re.Match[str]] = []
+    next_number, next_letter = 1, "a"
+
+    for marker in markers:
+        found = marker.group(1).lower()
+        if found.isdigit() and int(found) == next_number:
+            kept.append(marker)
+            next_number += 1
+        elif found == next_letter:
+            kept.append(marker)
+            next_letter = chr(ord(next_letter) + 1)
+
+    return kept
+
+
+def theses(block: str | None) -> list[str]:
+    """
+    The thesis block split into what the court numbered, or one single thesis.
+
+    A quarter of the blocks carry one thesis and no numbering, so a list of one
+    is the normal shape, not a failure.
+    """
+    text = (block or "").strip()
+    if not text:
+        return []
+
+    markers = _in_sequence(list(_MARKER.finditer(text)))
+    if len(markers) < 2 or markers[0].start() > 6:
+        return [re.sub(r"^[\[(]?1[.)][\s\xa0]+", "", text)]
+
+    bounds = [m.start() for m in markers[1:]] + [len(text)]
+    parts = [
+        text[marker.end() : end].lstrip(OPENING).rstrip(CLOSING + ";")
+        for marker, end in zip(markers, bounds, strict=True)
+    ]
+    return [part for part in parts if part] or [text]

@@ -15,6 +15,7 @@ COPY app ./app
 FROM python:3.12-slim-bookworm AS runtime
 
 ENV PATH="/app/.venv/bin:$PATH" \
+    PLAYWRIGHT_BROWSERS_PATH=/opt/playwright \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
@@ -24,6 +25,10 @@ WORKDIR /app
 
 COPY --from=builder --chown=caselaw:caselaw /app/.venv ./.venv
 COPY --from=builder --chown=caselaw:caselaw /app/app ./app
+
+RUN python -m playwright install --with-deps --only-shell chromium \
+    && chmod -R a+rX /opt/playwright \
+    && rm -rf /var/lib/apt/lists/*
 
 USER caselaw
 

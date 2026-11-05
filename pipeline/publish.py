@@ -9,7 +9,23 @@ PUBLISHED_SCHEMA = "core"
 
 ROOT = Path(__file__).resolve().parent.parent
 
-TABLES = ("tribunal", "fonte", "classe_processual", "carga", "decisao")
+# Written by hand, and that is the trap: `stage` copies these names and
+# nothing else, so a table a model creates stays invisible in dev and
+# production until it is added here. core.precedente and core.doutrina were
+# both ready in the code and absent from the environments for exactly that
+# reason.
+TABLES = (
+    "tribunal",
+    "fonte",
+    "classe_processual",
+    "carga",
+    "decisao",
+    "precedente",
+    "decisao_precedente",
+    "doutrina",
+    "doutrina_termo",
+    "decisao_doutrina",
+)
 
 INDEXES = (
     (
@@ -26,6 +42,37 @@ INDEXES = (
     f"CREATE INDEX ON {STAGING_SCHEMA}.decisao (tribunal_sigla, relator)",
     f"CREATE INDEX ON {STAGING_SCHEMA}.decisao (processo)",
     f"CREATE INDEX ON {STAGING_SCHEMA}.decisao (classe_cnj)",
+    # The copy is a plain SELECT, so no index comes with it. These mirror what
+    # the models declare: without them the detail screen reads 28 thousand
+    # suggestions sequentially on every decision opened.
+    f"CREATE UNIQUE INDEX ON {STAGING_SCHEMA}.precedente (corte, tipo, numero)",
+    f"CREATE INDEX ON {STAGING_SCHEMA}.precedente (tipo, numero)",
+    (
+        f"CREATE UNIQUE INDEX ON {STAGING_SCHEMA}.decisao_precedente "
+        "(fonte_codigo, identificador_fonte, corte, tipo, numero)"
+    ),
+    f"CREATE INDEX ON {STAGING_SCHEMA}.decisao_precedente (corte, tipo, numero)",
+    f"CREATE INDEX ON {STAGING_SCHEMA}.decisao_precedente (resolvida)",
+    (
+        f"CREATE UNIQUE INDEX ON {STAGING_SCHEMA}.doutrina "
+        "(repositorio, identificador_oai)"
+    ),
+    f"CREATE INDEX ON {STAGING_SCHEMA}.doutrina USING gin (busca)",
+    f"CREATE INDEX ON {STAGING_SCHEMA}.doutrina (ano)",
+    (
+        f"CREATE UNIQUE INDEX ON {STAGING_SCHEMA}.doutrina_termo "
+        "(repositorio, identificador_oai, termo)"
+    ),
+    f"CREATE INDEX ON {STAGING_SCHEMA}.doutrina_termo (termo)",
+    (
+        f"CREATE UNIQUE INDEX ON {STAGING_SCHEMA}.decisao_doutrina "
+        "(fonte_codigo, identificador_fonte, repositorio, identificador_oai)"
+    ),
+    (
+        f"CREATE INDEX ON {STAGING_SCHEMA}.decisao_doutrina "
+        "(fonte_codigo, identificador_fonte, nota DESC)"
+    ),
+    f"CREATE INDEX ON {STAGING_SCHEMA}.decisao_doutrina (repositorio, identificador_oai)",
 )
 
 SEARCH_CONFIGURATION = """

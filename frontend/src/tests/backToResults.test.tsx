@@ -265,6 +265,7 @@ describe('the search session', () => {
     const api = installApi();
     const user = userEvent.setup();
     const { rerender } = render(<Screen shown />);
+    await user.type(screen.getByRole('searchbox'), 'dano moral');
     await user.click(screen.getByRole('button', { name: 'Pesquisar' }));
     await screen.findAllByRole('article');
 
@@ -283,6 +284,7 @@ describe('the search session', () => {
     installApi(() => (++calls === 1 ? late.promise : json(page(222, ['1002']))));
     const user = userEvent.setup();
     const { rerender } = render(<Screen shown />);
+    await user.type(screen.getByRole('searchbox'), 'dano moral');
     await user.click(screen.getByRole('button', { name: 'Pesquisar' }));
 
     rerender(<Screen shown={false} />);

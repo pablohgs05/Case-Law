@@ -3,6 +3,11 @@ import type { SearchParams } from '../api/search';
 export type SearchFilterValues = {
   // Abbreviations exactly as the API lists them. Empty means every court.
   courts: string[];
+  // Exact option values from the API. Empty means every judging body or judge.
+  judgingBodies: string[];
+  reportingJudges: string[];
+  // CNJ codes from the API. Empty means every class, including unclassified decisions.
+  proceduralClasses: number[];
   // `YYYY-MM-DD`, what a date input holds and what the API reads. Empty means
   // the range is open on that side.
   dateFrom: string;
@@ -19,6 +24,9 @@ export type FilterErrors = Partial<Record<DateGroup, string>>;
 
 export const NO_FILTERS: SearchFilterValues = {
   courts: [],
+  judgingBodies: [],
+  reportingJudges: [],
+  proceduralClasses: [],
   dateFrom: '',
   dateTo: '',
   publishedFrom: '',
@@ -55,21 +63,27 @@ export function hasErrors(errors: FilterErrors): boolean {
   return Object.values(errors).some(Boolean);
 }
 
-// What the button's badge counts: each court, and each period with at least
+// What the button's badge counts: each selected value, and each period with at least
 // one end, since a single bound is a filter too.
 export function countFilters(values: SearchFilterValues): number {
   return (
     values.courts.length +
+    values.judgingBodies.length +
+    values.reportingJudges.length +
+    values.proceduralClasses.length +
     (values.dateFrom || values.dateTo ? 1 : 0) +
     (values.publishedFrom || values.publishedTo ? 1 : 0)
   );
 }
 
 export function sameFilters(a: SearchFilterValues, b: SearchFilterValues): boolean {
-  const courts = (values: SearchFilterValues) => [...values.courts].sort().join('\n');
+  const selected = (values: string[] | number[]) => [...values].sort().join('\n');
 
   return (
-    courts(a) === courts(b) &&
+    selected(a.courts) === selected(b.courts) &&
+    selected(a.judgingBodies) === selected(b.judgingBodies) &&
+    selected(a.reportingJudges) === selected(b.reportingJudges) &&
+    selected(a.proceduralClasses) === selected(b.proceduralClasses) &&
     a.dateFrom === b.dateFrom &&
     a.dateTo === b.dateTo &&
     a.publishedFrom === b.publishedFrom &&
@@ -85,6 +99,9 @@ export function toSearchParams(q: string, values: SearchFilterValues): SearchPar
     page: 1,
     page_size: PAGE_SIZE,
     tribunal: values.courts.length > 0 ? values.courts : undefined,
+    orgao_julgador: values.judgingBodies.length > 0 ? values.judgingBodies : undefined,
+    relator: values.reportingJudges.length > 0 ? values.reportingJudges : undefined,
+    classe_cnj: values.proceduralClasses.length > 0 ? values.proceduralClasses : undefined,
     date_from: values.dateFrom || undefined,
     date_to: values.dateTo || undefined,
     published_from: values.publishedFrom || undefined,

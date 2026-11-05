@@ -3,6 +3,33 @@
 
 export const NOT_INFORMED = 'Não informado';
 
+export const DELIBERATION_LABELS = {
+  unanime: 'Unânime',
+  maioria: 'Por maioria',
+  'nao-informado': NOT_INFORMED,
+  'nao-aplicavel': 'Não aplicável',
+} as const;
+
+export type DeliberationState = keyof typeof DELIBERATION_LABELS;
+
+// Without the dispositive the last two cannot be told apart, so omit it.
+export function deliberationStateOf(
+  deliberation: string | null | undefined,
+  outcome?: string | null,
+): DeliberationState | null {
+  const vote = normalizeText(deliberation);
+
+  if (vote === 'unanime' || vote === 'maioria') {
+    return vote;
+  }
+
+  if (outcome === undefined) {
+    return null;
+  }
+
+  return normalizeText(outcome) ? 'nao-informado' : 'nao-aplicavel';
+}
+
 export function normalizeText(value: string | null | undefined): string {
   if (typeof value !== 'string') {
     return '';

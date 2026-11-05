@@ -10,6 +10,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/01-extensions.sql:ro
+      - ./identidade.sql:/docker-entrypoint-initdb.d/02-identidade.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-caselaw} -d ${POSTGRES_DB:-caselaw}"]
       interval: 5s
@@ -22,6 +23,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-caselaw}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-caselaw}
       ENVIRONMENT: development
+      SESSION_SECRET: ${SESSION_SECRET:?release.sh mints this into .env}
       ROOT_PATH: ${ROOT_PATH:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
     ports:

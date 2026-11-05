@@ -69,6 +69,7 @@ CREATE TABLE raw.espelho_stj (
     "numeroProcesso"    TEXT,
     "nomeOrgaoJulgador" TEXT,
     "ministroRelator"   TEXT,
+    "descricaoClasse"   TEXT,
     ementa              TEXT,
     decisao             TEXT,
     _dlt_load_id        TEXT
@@ -76,22 +77,24 @@ CREATE TABLE raw.espelho_stj (
 
 -- A ementa vazia não entra. O órgão aparece com e sem acento para o mesmo
 -- colegiado, e a transformação tem de escolher a grafia acentuada.
+-- A classe vem como o STJ escreve: a escada inteira, "AGRAVO REGIMENTAL NO
+-- RECURSO ESPECIAL", que a tabela do CNJ só tem em peças soltas.
 INSERT INTO raw.espelho_stj VALUES
 ('8000001', '202600611241', '20260310', 'DJe DATA:15/03/2026 Pág. 122',
- '2106100', 'PRIMEIRA SEÇÃO', 'JOÃO OTÁVIO DE NORONHA',
+ '2106100', 'PRIMEIRA SEÇÃO', 'JOÃO OTÁVIO DE NORONHA', 'RECURSO ESPECIAL',
  'RECURSO ESPECIAL. Alienação fiduciária. Penhora de direitos aquisitivos.',
  'RECURSO ESPECIAL DESPROVIDO.', '1789000000.0'),
 
 ('8000002', '202600611242', '20260311', 'DJe DATA:16/03/2026 Pág. 87',
- '2106101', 'PRIMEIRA SECAO', 'NANCY ANDRIGHI',
+ '2106101', 'PRIMEIRA SECAO', 'NANCY ANDRIGHI', 'AGRAVO REGIMENTAL NO RECURSO ESPECIAL',
  'PROCESSUAL CIVIL. Prescrição intercorrente em execução fiscal.',
  'RECURSO PROVIDO.', '1789000000.0'),
 
 ('8000003', '202600611243', '20260312', 'DJe DATA:17/03/2026 Pág. 45',
- '2106102', 'QUINTA TURMA', 'ANTONIO SALDANHA PALHEIRO',
+ '2106102', 'QUINTA TURMA', 'ANTONIO SALDANHA PALHEIRO', 'AÇÃO RESCISÓRIA',
  'PENAL. Dano moral coletivo. Dever de reparação reconhecido.',
  'AGRAVO REGIMENTAL NÃO PROVIDO.', '1789000000.0'),
 
 ('8000004', '202600611244', '20260313', 'DJe DATA:18/03/2026 Pág. 12',
- '2106103', 'QUINTA TURMA', 'ANTONIO SALDANHA PALHEIRO',
+ '2106103', 'QUINTA TURMA', 'ANTONIO SALDANHA PALHEIRO', 'CLASSE QUE NAO EXISTE',
  '', 'DECISAO SEM EMENTA PUBLICADA.', '1789000000.0');

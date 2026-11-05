@@ -1,4 +1,5 @@
 import { apiBaseUrl, assertApiConfiguration } from './client';
+import { apiHeaders } from './token';
 
 // The four sections of the national court council's shape, without the labels
 // the court wrote. `null` on the decision when the ementa is free prose.
@@ -22,6 +23,7 @@ export type Decision = {
   small_claims: boolean;
   source_url: string;
   source_url_reachable: boolean | null;
+  source_url_shared: boolean;
   // The national council's number for the class. The API sends no name.
   class_code: number | null;
   judged_on: string | null;
@@ -29,8 +31,17 @@ export type Decision = {
   // The whole ementa. HTML with `<mark>` when asked with `q`, plain text without.
   summary: string;
   outcome: string | null;
+  // What the court itself settled, one entry per item it numbered. Empty when
+  // the court recorded none, which is most of the collection: the structured
+  // ementa is a 2024 standard and the STJ's own reaches back to 1989.
+  thesis: string[];
+  // How the panel voted: 'unanime', 'maioria', or null when neither was read.
+  deliberation: string | null;
   full_text_available: boolean;
   sections: EmentaSections | null;
+  // Súmulas and temas the decision cites. Absent on an older API, which is why
+  // the screen reads it through `readCitedPrecedents` rather than trusting it.
+  precedents?: unknown;
 };
 
 // A failed read, carrying the status so a missing decision can be told apart
@@ -63,9 +74,7 @@ export async function getDecision(
 
   const response = await fetch(url.toString(), {
     method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
+    headers: apiHeaders(),
     signal: options.signal,
   });
 
@@ -74,4 +83,19 @@ export async function getDecision(
   }
 
   return (await response.json()) as Decision;
+}
+
+// Read the thesis defensively: an environment serving a publication older than
+// this build sends no field at all, and `.map` on `undefined` would take the
+// whole card down over something that is absent on most of the collection
+// anyway.
+export function readThesis(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter(Boolean);
 }

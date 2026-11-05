@@ -88,8 +88,20 @@ function installApi(total: number, answer?: Answer) {
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input));
+      if (url.pathname === '/exports/options') {
+        return json({ max_decisions: 1000 });
+      }
+      if (url.pathname === '/filters') {
+        return json({ judging_bodies: [], reporting_judges: [], procedural_classes: [] });
+      }
       if (url.pathname === '/courts') {
         return json({ courts: COURTS });
+      }
+      // O bloco de doutrina do detalhe também não é busca: ele pede por
+      // decisão aberta, e contá-lo como página faria a conta de requisições
+      // desta suíte dobrar sem que nada tivesse mudado na paginação.
+      if (url.pathname.endsWith('/doctrine')) {
+        return json({ results: [] });
       }
       const found = url.pathname.match(/^\/decisions\/[^/]+\/([^/]+)$/);
       if (found) {

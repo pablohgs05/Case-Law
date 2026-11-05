@@ -4,9 +4,14 @@ version = "0.1.0"
 description = "Case Law API — consolidation and analysis of judicial precedents"
 requires-python = ">=3.12"
 dependencies = [
+    "argon2-cffi>=23.1.0",
     "fastapi>=0.141.1",
+    "playwright>=1.64.1",
     "psycopg[binary,pool]>=3.3.5",
+    "email-validator>=2.2.0",
     "pydantic-settings>=2.15.0",
+    "pyjwt>=2.10.1",
+    "tzdata>=2026.3",
     "uvicorn[standard]>=0.52.4",
 ]
 
@@ -26,6 +31,9 @@ markers = [
 dev = [
     "httpx2>=2.12.0",
     "mypy>=2.3.1",
+    "pypdf>=6.21.2",
     "pytest>=9.1.1",
+    "pyyaml>=6.0.3",
     "ruff>=0.16.7",
+    "types-pyyaml>=6.0.12",
 ]

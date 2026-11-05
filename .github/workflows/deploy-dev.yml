@@ -88,6 +88,7 @@ jobs:
           scp -i ~/.ssh/deploy deploy/release.sh "$PI_USER@$PI_HOST:~/$REMOTE_DIR/release.sh"
           scp -i ~/.ssh/deploy infra/postgres/init.sql "$PI_USER@$PI_HOST:~/$REMOTE_DIR/init.sql"
           scp -i ~/.ssh/deploy backend/app/identidade.sql "$PI_USER@$PI_HOST:~/$REMOTE_DIR/identidade.sql"
+          scp -i ~/.ssh/deploy backend/app/leitura.sql "$PI_USER@$PI_HOST:~/$REMOTE_DIR/leitura.sql"
 
       - name: Authenticate the development server against the registry
         env:

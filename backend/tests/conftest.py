@@ -16,6 +16,7 @@ FIXTURES = Path(__file__).parent / "fixtures"
 # The accounts schema the server applies, not a copy of it: a second
 # definition here would drift from the real one without a test noticing.
 IDENTITY = Path(__file__).resolve().parents[1] / "app" / "identidade.sql"
+QUALITY = Path(__file__).resolve().parents[1] / "app" / "qualidade.sql"
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "")
 
@@ -53,6 +54,7 @@ def prepared_database() -> Iterator[str]:
         for name in ("schema.sql", "decisions.sql"):
             conn.execute((FIXTURES / name).read_text(encoding="utf-8"))
         conn.execute(IDENTITY.read_text(encoding="utf-8"))
+        conn.execute(QUALITY.read_text(encoding="utf-8"))
     yield TEST_DATABASE_URL
 
 

@@ -216,3 +216,8 @@ CREATE TABLE core.doutrina_termo (
 -- Dropped here, created by `app/identidade.sql`: the accounts schema has one
 -- definition, and a copy of it here would be a copy that drifts.
 DROP SCHEMA IF EXISTS identidade CASCADE;
+
+-- Likewise for `app/qualidade.sql`. Dropped too, not only recreated: its
+-- reports reference the accounts dropped above, and `IF NOT EXISTS` would keep
+-- a table whose foreign key the cascade already took away.
+DROP SCHEMA IF EXISTS qualidade CASCADE;

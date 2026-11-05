@@ -26,7 +26,7 @@ SHIPPERS = (
     Path(".github/workflows/deploy-producao.yml"),
 )
 
-CITATION = re.compile(r"[A-Za-z0-9_./-]*identidade\.sql")
+CITATION = re.compile(r"[A-Za-z0-9_./-]*(?:identidade|qualidade)\.sql")
 
 
 def _copied_into_the_image() -> list[Path]:
@@ -63,10 +63,11 @@ def test_the_schema_travels_with_the_code() -> None:
     """
     carried = _copied_into_the_image()
 
-    assert owner.SCHEMA.exists()
-    assert any(owner.SCHEMA.is_relative_to(directory) for directory in carried), (
-        f"{owner.SCHEMA} is not in the image, which carries {carried}"
-    )
+    for schema in owner.SCHEMAS:
+        assert schema.exists()
+        assert any(schema.is_relative_to(directory) for directory in carried), (
+            f"{schema} is not in the image, which carries {carried}"
+        )
 
 
 def test_everything_that_ships_the_schema_points_at_the_same_file() -> None:
@@ -75,7 +76,7 @@ def test_everything_that_ships_the_schema_points_at_the_same_file() -> None:
     upload it, and the command applies it — if they can disagree about where it
     is, a database gets one shape and the code assumes another.
     """
-    expected = {owner.SCHEMA.relative_to(REPOSITORY).as_posix()}
+    expected = {schema.relative_to(REPOSITORY).as_posix() for schema in owner.SCHEMAS}
 
     for relative in SHIPPERS:
         cited = _files_cited_in((REPOSITORY / relative).read_text(encoding="utf-8"))
@@ -96,10 +97,29 @@ def test_migrate_applies_the_schema_and_may_be_run_again(
 
     with db.cursor() as cursor:
         cursor.execute(
-            "SELECT COUNT(*) AS tabelas FROM information_schema.tables "
-            "WHERE table_schema = 'identidade'"
+            "SELECT table_schema, COUNT(*) AS tabelas "
+            "FROM information_schema.tables "
+            "WHERE table_schema IN ('identidade', 'qualidade') "
+            "GROUP BY table_schema"
         )
-        found = cursor.fetchone()
+        found = {row["table_schema"]: row["tabelas"] for row in cursor.fetchall()}
 
-    assert found is not None
-    assert found["tabelas"] == 1
+    assert found == {"identidade": 1, "qualidade": 1}
+
+
+def test_the_reports_come_after_the_accounts_they_belong_to() -> None:
+    """
+    A report references the account that sent it, so its schema can only be
+    applied once the accounts exist — by `migrar`, and by the init scripts,
+    which PostgreSQL runs in the order of their names.
+    """
+    assert owner.SCHEMAS.index(owner.SCHEMA) < owner.SCHEMAS.index(owner.QUALITY_SCHEMA)
+
+    for relative in (
+        Path("docker-compose.yml"),
+        Path("deploy/docker-compose.dev.yml"),
+        Path("deploy/docker-compose.prod.yml"),
+    ):
+        text = (REPOSITORY / relative).read_text(encoding="utf-8")
+
+        assert "02-identidade.sql" in text and "03-qualidade.sql" in text, relative

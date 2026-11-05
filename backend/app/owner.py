@@ -25,6 +25,10 @@ from app.db import connection, pool
 # Beside the module, so it travels into the image with the code: this
 # command runs on the server, where the repository is not checked out.
 SCHEMA = Path(__file__).resolve().parent / "identidade.sql"
+# Reports of an incorrect classification. After the accounts, because a report
+# belongs to the account that sent it.
+QUALITY_SCHEMA = Path(__file__).resolve().parent / "qualidade.sql"
+SCHEMAS = (SCHEMA, QUALITY_SCHEMA)
 
 MANAGERS_SQL = """
 SELECT nome, email, ativo, criado_em,
@@ -38,12 +42,13 @@ ORDER BY LOWER(nome)
 
 def migrate(db: Connection[DictRow]) -> None:
     """
-    Apply the identity schema. Idempotent, so it is safe on a database that
-    already has it — which is how an environment created before accounts
-    existed gets them without being rebuilt.
+    Apply the schemas that live outside `core`. Idempotent, so it is safe on a
+    database that already has them — which is how an environment created
+    before accounts, or before reports, gets them without being rebuilt.
     """
-    db.execute(SCHEMA.read_text(encoding="utf-8"))
-    print(f"schema identidade aplicado a partir de {SCHEMA}")
+    for schema in SCHEMAS:
+        db.execute(schema.read_text(encoding="utf-8"))
+        print(f"schema {schema.stem} aplicado a partir de {schema}")
 
 
 def ask_password() -> str:

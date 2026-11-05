@@ -244,6 +244,118 @@ def _count_sql(filters: str = "") -> str:
     return f"SELECT COUNT(*) AS total FROM core.decisao WHERE {MATCH}{filters}"
 
 
+# How deep `core.busca_ampla` goes for each frequent term: 1000 rows, 50 pages
+# of 20. A page that ends past it is served the slow way, correctly.
+BROAD_DEPTH = 1000
+
+# Whether this search is one `core.busca_ampla` already answered, and the exact
+# total if it is. Both come from the database rather than from Python because
+# the term has to go through the same stemmer the index used: deciding here
+# that "recursos" means `recurs` would be a second implementation of the search
+# configuration, free to disagree with the first.
+#
+# `numnode(q) = 1` is the whole test for "one word". A phrase comes back as
+# `'a' <-> 'b'`, two words as `'a' & 'b'`, a negation carries `!` — every one of
+# them has more than one node, and every one of them is already fast, because
+# the intersection of two common words is a small set. Measured on production:
+# `recurso` 765,840 matches and 95.3s, `dano moral` 29,783 and 0.6s.
+BROAD_TERM_SQL = f"""
+SELECT termo.lexema, termo.decisoes
+FROM (SELECT {QUERY} AS consulta) AS pesquisa
+JOIN core.termo_frequente AS termo
+  ON NUMNODE(pesquisa.consulta) = 1
+ AND termo.lexema = BTRIM(pesquisa.consulta::text, '''')
+"""
+
+BROAD_PAGE_SQL = f"""
+WITH pagina AS (
+    SELECT rank, data_referencia, fonte_codigo, identificador_fonte
+    FROM core.busca_ampla
+    WHERE lexema = %(lexema)s
+    ORDER BY rank DESC, data_referencia DESC, fonte_codigo DESC, identificador_fonte DESC
+    LIMIT %(limit)s OFFSET %(offset)s
+)
+SELECT
+    decisao.fonte_codigo,
+    decisao.identificador_fonte,
+    decisao.tribunal_sigla,
+    decisao.processo,
+    decisao.orgao_julgador,
+    decisao.relator,
+    decisao.data_referencia,
+    decisao.turma_recursal,
+    decisao.url_fonte,
+    decisao.link_valido,
+    decisao.url_compartilhada,
+    decisao.deliberacao,
+    decisao.ementa,
+    decisao.tese,
+    {SNIPPET} AS snippet
+FROM pagina
+JOIN core.decisao AS decisao
+  ON decisao.fonte_codigo = pagina.fonte_codigo
+ AND decisao.identificador_fonte = pagina.identificador_fonte
+ORDER BY
+    pagina.rank DESC,
+    pagina.data_referencia DESC,
+    pagina.fonte_codigo DESC,
+    pagina.identificador_fonte DESC
+"""
+
+
+# Whether the base in front of this server carries the ranking yet.
+#
+# A deploy can land before the base that goes with it — it happened once this
+# sprint already. Without this check the first statement of every search would
+# name a table that does not exist, and a search would answer 500 instead of
+# answering slowly. Slowly is the right answer: the old path is still there and
+# still correct.
+#
+# Asked every time rather than remembered. The statement reads one catalog row
+# and costs a tenth of a millisecond against a page that costs thirty-six, and
+# a server that started before the base was published starts serving from the
+# ranking the moment it appears, with nobody having to restart it.
+RANKING_PUBLISHED_SQL = (
+    "SELECT TO_REGCLASS('core.busca_ampla') IS NOT NULL AS publicado"
+)
+
+
+def _ranking_published(cursor: Any) -> bool:
+    cursor.execute(RANKING_PUBLISHED_SQL)
+    row = cursor.fetchone()
+    return bool(row and row["publicado"])
+
+
+def _broad_term(
+    cursor: Any,
+    parameters: dict[str, Any],
+    filters: str,
+    order: Order,
+    offset: int,
+    page_size: int,
+) -> DictRow | None:
+    """
+    The pre-ranked term behind this search, when there is one.
+
+    Four conditions, and all of them have to hold. Relevance order, because
+    that is the order the table stores. No filter, because a filter can push a
+    decision from page 400 onto page 1 and the stored order would no longer be
+    the order of the filtered set. A page inside the stored depth. And a term
+    the table actually carries.
+
+    Returning `None` is not a failure: it means this search was already fast
+    enough to answer the way it always has.
+    """
+    if filters or order != "relevance" or offset + page_size > BROAD_DEPTH:
+        return None
+
+    if not _ranking_published(cursor):
+        return None
+
+    cursor.execute(BROAD_TERM_SQL, parameters)
+    return cursor.fetchone()
+
+
 def _page_sql(filters: str = "", ordering: str = "") -> str:
     ordering = ordering or ORDERINGS[DEFAULT_ORDER]
     return f"""
@@ -1111,14 +1223,25 @@ def search_decisions(
         "offset": offset,
     }
 
-    with connection.cursor() as cursor:
-        cursor.execute(_count_sql(filters), parameters)
-        total = int((cursor.fetchone() or {"total": 0})["total"])
+    rows: list[DictRow] = []
 
-        rows: list[DictRow] = []
-        if offset < total:
-            cursor.execute(_page_sql(filters, ORDERINGS[order]), parameters)
+    with connection.cursor() as cursor:
+        broad = _broad_term(cursor, parameters, filters, order, offset, page_size)
+
+        if broad is not None:
+            # Both the page and the total are read, not computed. The total is
+            # the exact number of decisions carrying the term, counted once
+            # when the base was built.
+            total = int(broad["decisoes"])
+            cursor.execute(BROAD_PAGE_SQL, {**parameters, "lexema": broad["lexema"]})
             rows = cursor.fetchall()
+        else:
+            cursor.execute(_count_sql(filters), parameters)
+            total = int((cursor.fetchone() or {"total": 0})["total"])
+
+            if offset < total:
+                cursor.execute(_page_sql(filters, ORDERINGS[order]), parameters)
+                rows = cursor.fetchall()
 
     return SearchResults(
         total=total,

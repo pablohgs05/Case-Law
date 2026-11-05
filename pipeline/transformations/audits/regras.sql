@@ -564,3 +564,56 @@ FROM @this_model
 HAVING COUNT(*) FILTER (WHERE url_fonte IS NOT NULL) > 10000
    AND COUNT(*) FILTER (WHERE url_compartilhada)
        > COUNT(*) FILTER (WHERE url_fonte IS NOT NULL) * 0.02;
+
+AUDIT (
+  name termo_frequente_acima_do_teto,
+  dialect postgres
+);
+/* O piso de 16.000 decisões não é número redondo: é o teto de 2 s dividido
+   pelos 12,5 MB/s que o disco da produção entrega, convertido em decisões a
+   1.574 bytes de tsvector cada. Se alguém baixar o piso sem refazer a conta, a
+   tabela cresce para servir buscas que já eram rápidas; se subir, buscas
+   lentas ficam de fora e a história volta a falhar em silêncio. */
+SELECT *
+FROM @this_model
+WHERE decisoes < 16000;
+
+AUDIT (
+  name busca_ampla_cobre_todo_termo_frequente,
+  dialect postgres
+);
+/* Termo que passou do piso e não tem página materializada é uma busca que
+   continua levando 95 s, e nada na tela diria isso: a resposta é a mesma, só
+   demora. Cada termo tem mil linhas, ou todas as suas decisões se forem menos
+   de mil — o que não acontece acima do piso, mas o LEAST deixa a regra
+   verdadeira em ambiente de amostra. */
+SELECT t.lexema, t.decisoes, COALESCE(b.linhas, 0) AS linhas
+FROM core.termo_frequente AS t
+LEFT JOIN (
+  SELECT lexema, COUNT(*) AS linhas
+  FROM @this_model
+  GROUP BY lexema
+) AS b
+  ON b.lexema = t.lexema
+WHERE COALESCE(b.linhas, 0) <> LEAST(t.decisoes, 1000);
+
+AUDIT (
+  name busca_ampla_na_mesma_ordem,
+  dialect postgres
+);
+/* O valor guardado tem que ser o `ts_rank` de verdade, não um parecido. Esta é
+   a regra que pega o erro que destruiria a história sem derrubar nada: se a
+   configuração de busca mudar, ou se o lexema for radicalizado de novo na
+   construção, o ranking continua existindo e continua rápido — só deixa de ser
+   o ranking da busca, e a primeira página passa a mostrar outra coisa.
+
+   Confere a primeira posição de cada termo, não as mil: um erro desses é
+   sistêmico, aparece na primeira linha, e conferir 1.183 linhas custa
+   segundos enquanto conferir 1,2 milhão custa uma reconstrução. */
+SELECT b.lexema, b.rank, TS_RANK(d.ementa_busca, QUOTE_LITERAL(b.lexema)::TSQUERY) AS rank_recalculado
+FROM @this_model AS b
+JOIN core.decisao AS d
+  ON d.fonte_codigo = b.fonte_codigo
+ AND d.identificador_fonte = b.identificador_fonte
+WHERE b.posicao = 1
+  AND b.rank IS DISTINCT FROM TS_RANK(d.ementa_busca, QUOTE_LITERAL(b.lexema)::TSQUERY)::REAL;

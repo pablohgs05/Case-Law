@@ -1,7 +1,8 @@
 import { Link, NavLink, useLocation, useMatch } from 'react-router-dom';
-import { Database, SignOut, UsersThree } from '@phosphor-icons/react';
+import { Database, Flag, SignOut, UsersThree } from '@phosphor-icons/react';
 
 import { COVERAGE_PATH, type CoverageEntry } from '../pages/CoveragePage';
+import { REPORTS_PATH } from '../pages/ReportsPage';
 import { TEAM_PATH } from '../pages/TeamPage';
 import { useSession } from '../session/sessionContext';
 
@@ -14,9 +15,10 @@ function AppHeader({ searchSlotRef }: AppHeaderProps) {
   const location = useLocation();
   const onCoverage = useMatch(COVERAGE_PATH) !== null;
   const onTeam = useMatch(TEAM_PATH) !== null;
+  const onReports = useMatch(REPORTS_PATH) !== null;
   // The search and a decision read inside it are the same screen: the list
   // stays mounted while the address changes.
-  const onSearch = !onCoverage && !onTeam;
+  const onSearch = !onCoverage && !onTeam && !onReports;
   const session = useSession();
   const person = session.status === 'signed in' ? session.person : null;
 
@@ -65,6 +67,16 @@ function AppHeader({ searchSlotRef }: AppHeaderProps) {
               <span className="app-header__text">
                 <span className="app-header__title">Usuários</span>
                 <span className="app-header__subtitle">Quem tem acesso</span>
+              </span>
+            </NavLink>
+          )}
+
+          {person?.role === 'gerente' && (
+            <NavLink to={REPORTS_PATH} replace={onReports} className="app-header__link">
+              <Flag size={14} aria-hidden="true" className="app-header__icon" />
+              <span className="app-header__text">
+                <span className="app-header__title">Reportes</span>
+                <span className="app-header__subtitle">Classificações contestadas</span>
               </span>
             </NavLink>
           )}

@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import AppHeader from './components/AppHeader';
 import CoveragePage, { COVERAGE_PATH } from './pages/CoveragePage';
 import HomePage from './pages/HomePage';
+import ReportsPage, { REPORTS_PATH } from './pages/ReportsPage';
 import SignInPage from './pages/SignInPage';
 import TeamPage, { TEAM_PATH } from './pages/TeamPage';
 import { HeaderSearchSlot } from './search/headerSearchSlot';
@@ -38,6 +39,7 @@ export function Tool() {
                 the search is passed to it. */}
             <Route path={COVERAGE_PATH} element={<CoveragePage />} />
             <Route path={TEAM_PATH} element={<TeamPage />} />
+            <Route path={REPORTS_PATH} element={<ReportsPage />} />
             {/* Signed in, there is nothing to sign in to. */}
             <Route path="/entrar" element={<Navigate to="/" replace />} />
           </Routes>

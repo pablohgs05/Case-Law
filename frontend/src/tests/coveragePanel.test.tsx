@@ -177,6 +177,7 @@ describe('the top bar', () => {
       '',
       'Cobertura da baseInformações do sistema',
       'UsuáriosQuem tem acesso',
+      'ReportesClassificações contestadas',
     ]);
     expect(bar.getByRole('searchbox', { name: 'Pesquisar decisões' })).toBeInTheDocument();
     // "Sair" vem primeiro porque a conta fica na linha da marca, acima da

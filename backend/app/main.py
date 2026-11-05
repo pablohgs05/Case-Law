@@ -13,6 +13,7 @@ from app.api import (
     health,
     indicators,
     session,
+    thesis,
     users,
 )
 from app.config import settings
@@ -94,3 +95,4 @@ app.include_router(exports.router)
 app.include_router(doctrine.router)
 app.include_router(session.router)
 app.include_router(users.router)
+app.include_router(thesis.router)

@@ -22,9 +22,11 @@ from psycopg.rows import DictRow
 from app import accounts, passwords
 from app.db import connection, pool
 
-# Beside the module, so it travels into the image with the code: this
+# Beside the module, so they travel into the image with the code: this
 # command runs on the server, where the repository is not checked out.
-SCHEMA = Path(__file__).resolve().parent / "identidade.sql"
+# Everything matching, rather than a list: a schema file added later is
+# then applied without anyone remembering to name it here.
+SCHEMAS = sorted((Path(__file__).resolve().parent).glob("*.sql"))
 
 MANAGERS_SQL = """
 SELECT nome, email, ativo, criado_em,
@@ -38,12 +40,13 @@ ORDER BY LOWER(nome)
 
 def migrate(db: Connection[DictRow]) -> None:
     """
-    Apply the identity schema. Idempotent, so it is safe on a database that
-    already has it — which is how an environment created before accounts
-    existed gets them without being rebuilt.
+    Apply the schemas the backend owns. Idempotent, so it is safe on a
+    database that already has them — which is how an environment created
+    before accounts existed gets them without being rebuilt.
     """
-    db.execute(SCHEMA.read_text(encoding="utf-8"))
-    print(f"schema identidade aplicado a partir de {SCHEMA}")
+    for schema in SCHEMAS:
+        db.execute(schema.read_text(encoding="utf-8"))
+        print(f"aplicado: {schema.name}")
 
 
 def ask_password() -> str:

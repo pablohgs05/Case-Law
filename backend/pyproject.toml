@@ -13,6 +13,7 @@ dependencies = [
     "pyjwt>=2.10.1",
     "tzdata>=2026.3",
     "uvicorn[standard]>=0.52.4",
+    "google-adk>=2.13.0",
 ]
 
 [tool.uv]

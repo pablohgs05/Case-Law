@@ -7,14 +7,14 @@
 | 🟦 Backend | 🟩 Frontend |
 | :--- | :--- |
 | **Classes**, com prioridade para **regra de negócio, services e utilitárias** | **Componentes React** |
-| Exemplo: \`StructuredEmenta.rebuild\` | Exemplo: \`DecisionResultCard\` |
+| Exemplo: `StructuredEmenta.rebuild` | Exemplo: `DecisionResultCard` |
 | Recebe dados em memória, sem banco/rede | Recebe props controladas, sem backend real |
 
 Uma classe é a unidade escolhida para o backend; o teste verifica o **comportamento observável** de seus métodos. No frontend, o componente é renderizado isoladamente.
 
 ## ② Processo de testes unitários
 
-\`\`\`mermaid
+```mermaid
 flowchart TD
     P["1. PLANNING<br/>Devs definem classes/componentes e critérios"] --> D["2. DEV<br/>Isola a unidade e escreve cenários BDD"]
     D --> T["3. EXECUÇÃO<br/>Roda testes e analisa os resultados"]
@@ -23,13 +23,13 @@ flowchart TD
     R -->|SIM| OK["✅ Aprova<br/>Segue o fluxo da equipe"]
     R -->|NÃO| FIX["🔧 Devolve ao autor<br/>Corrige e executa novamente"]
     FIX --> PR
-\`\`\`
+```
 
 **Responsabilidade:** se a PR introduzir falha ou conflito de teste, quem abriu a PR deve investigar, corrigir, reexecutar e registrar o novo resultado. Erro de infraestrutura ou defeito preexistente deve ser encaminhado ao responsável.
 
 ## ③ Critérios BDD do próprio projeto
 
-### 🟦 Backend — \`StructuredEmenta.rebuild\`
+### 🟦 Backend — `StructuredEmenta.rebuild`
 
 **DADO** cabeçalho e quatro seções com textos distintos.  
 **QUANDO** a classe reconstrói a ementa.  
@@ -39,7 +39,7 @@ Também são cobertos texto vazio, acentos, quebras de linha e espaços.
 
 🧪 [Código com quatro testes focais](https://github.com/pablohgs05/Case-Law/blob/dev/backend/tests/test_scrum_ementa_bdd.py)
 
-### 🟩 Frontend — \`DecisionResultCard\`
+### 🟩 Frontend — `DecisionResultCard`
 
 **DADO** uma decisão com trecho vazio, só espaços ou quebra de linha.  
 **QUANDO** o componente é renderizado.  
@@ -49,18 +49,18 @@ Também são cobertos texto vazio, acentos, quebras de linha e espaços.
 
 ## ④ Prova de que os testes detectam defeitos
 
-\`\`\`mermaid
+```mermaid
 flowchart LR
     A["Classe correta"] --> B["4 testes aprovados"]
     B --> C["Defeito deliberado:<br/>trocar ordem de seções"]
     C --> D["4 testes falham"]
     D --> E["Correção em novo commit"]
     E --> F["4 testes aprovados"]
-\`\`\`
+```
 
-- [PR #3 — sandbox, não integrar](https://github.com/pablohgs05/Case-Law/pull/3): defeito no commit \`ed77944\`, correção em \`a65f469\`, testes mantidos.
-- [PR #2 — contribuição unitária integrada à \`dev\`](https://github.com/pablohgs05/Case-Law/pull/2): código, critérios e evidências em PR, CI concluído e merge registrado.
-- [CI da \`dev\` após atualização de 05/11/2026](https://github.com/pablohgs05/Case-Law/actions/runs/42039148107): verificar o status atualizado antes de apresentar.
+- [PR #3 — sandbox, não integrar](https://github.com/pablohgs05/Case-Law/pull/3): defeito no commit `ed77944`, correção em `a65f469`, testes mantidos.
+- [PR #2 — contribuição unitária integrada à `dev`](https://github.com/pablohgs05/Case-Law/pull/2): código, critérios e evidências em PR, CI concluído e merge registrado.
+- [CI da `dev` após atualização de 05/11/2026](https://github.com/pablohgs05/Case-Law/actions/runs/42039148107): verificar o status atualizado antes de apresentar.
 
 As quatro falhas foram **provocadas no sandbox** para demonstrar que os testes detectam a quebra de regra. Não são uma aprovação ou devolução feita por outro desenvolvedor.
 

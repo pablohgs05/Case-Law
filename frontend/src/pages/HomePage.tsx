@@ -26,6 +26,8 @@ import OutcomeSharePanel from '../components/OutcomeSharePanel';
 import TimelineVolumePanel, { type TimelineState } from '../components/TimelineVolumePanel';
 import IndicatorDocumentsDrawer from '../components/IndicatorDocumentsDrawer';
 import PanoramaLayout from '../components/PanoramaLayout';
+import ConcentrationPanel from '../components/ConcentrationPanel';
+import { CONCENTRATION_LIMIT, type ConcentrationState } from '../components/concentrationFormat';
 import {
   selectIndicator,
   type IndicatorPoint,
@@ -39,6 +41,7 @@ import type { AdherenceState, MostCitedState } from '../components/precedentForm
 import { getAdherence, getMostCited } from '../api/precedents';
 import type { LastUpdateState, VolumeState } from '../components/volumeFormat';
 import {
+  getConcentration,
   getLastUpdate,
   getOutcomeShare,
   getVolumeByCourt,
@@ -165,6 +168,8 @@ type PanoramaCache = {
   adherence: AdherenceState;
   mostCited: MostCitedState;
   timeline: TimelineState;
+  // Absent from a panorama cached before this indicator existed.
+  concentration?: ConcentrationState;
 } | null;
 
 function volumeFailure(error: unknown): string {
@@ -526,7 +531,7 @@ function HomePage() {
   const [panorama, setPanorama] = useSessionState<PanoramaCache>('panorama', null);
   const [lastUpdate, setLastUpdate] = useSessionState<LastUpdateState | null>('lastUpdate', null);
   const cutKey = applied ? volumeKey(volumeFor(applied)) : null;
-  const panoramaKey = panorama?.timeline ? panorama.key : null;
+  const panoramaKey = panorama?.timeline && panorama.concentration ? panorama.key : null;
 
   // Asked when the panorama is up and what it holds is not this cut: a new
   // expression or new filters, applied while it was up or before it opened.
@@ -548,6 +553,8 @@ function HomePage() {
       setPanorama((current) => (current?.key === key ? { ...current, mostCited } : current));
     const settleTimeline = (timeline: TimelineState) =>
       setPanorama((current) => (current?.key === key ? { ...current, timeline } : current));
+    const settleConcentration = (concentration: ConcentrationState) =>
+      setPanorama((current) => (current?.key === key ? { ...current, concentration } : current));
 
     setPanorama({
       key,
@@ -556,6 +563,7 @@ function HomePage() {
       timeline: { status: 'loading' },
       adherence: { status: 'loading' },
       mostCited: { status: 'loading' },
+      concentration: { status: 'loading' },
     });
     getVolumeByPeriod(volumeFor(applied)).then(
       (volume) => settleTimeline({ status: 'loaded', volume }),
@@ -576,6 +584,11 @@ function HomePage() {
     getAdherence(volumeFor(applied)).then(
       (adherence) => settleAdherence({ status: 'loaded', adherence }),
       (error: unknown) => settleAdherence({ status: 'failed', message: volumeFailure(error) }),
+    );
+
+    getConcentration(volumeFor(applied), { limit: CONCENTRATION_LIMIT }).then(
+      (concentration) => settleConcentration({ status: 'loaded', concentration }),
+      (error: unknown) => settleConcentration({ status: 'failed', message: volumeFailure(error) }),
     );
 
     getMostCited(volumeFor(applied), { limit: 8 }).then(
@@ -627,6 +640,12 @@ function HomePage() {
       ? { status: 'idle' }
       : panorama?.key === cutKey
         ? panorama.mostCited
+        : { status: 'loading' };
+  const concentrationState: ConcentrationState =
+    cutKey === null
+      ? { status: 'idle' }
+      : panorama?.key === cutKey && panorama.concentration
+        ? panorama.concentration
         : { status: 'loading' };
   const lastUpdateState: LastUpdateState = lastUpdate ?? { status: 'loading' };
   const timelineState: TimelineState =
@@ -1000,6 +1019,14 @@ function HomePage() {
                 onSelectOutcome={(outcome, count) =>
                   openIndicator({ kind: 'outcome', outcome, count })
                 }
+              />
+            }
+            concentration={
+              <ConcentrationPanel
+                concentration={concentrationState}
+                onRetry={retryPanorama}
+                selectionDisabled={isLoading || indicatorOpen}
+                onSelect={(selection) => openIndicator({ kind: 'concentration', ...selection })}
               />
             }
           />

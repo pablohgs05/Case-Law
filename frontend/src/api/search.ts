@@ -59,6 +59,10 @@ export type SearchParams = {
   relator?: string[];
   classe_cnj?: number[];
   resultado?: string[];
+  // Exact values to leave out. Only the concentration indicator sends them:
+  // its "other" slice is the cut minus the groups ranked above it.
+  orgao_julgador_excluido?: string[];
+  relator_excluido?: string[];
   highlight?: Highlight;
   // `YYYY-MM-DD`, passed through untouched.
   date_from?: string;
@@ -115,6 +119,8 @@ export async function searchDecisions(
     'relator',
     'classe_cnj',
     'resultado',
+    'orgao_julgador_excluido',
+    'relator_excluido',
   ] as const) {
     for (const value of params[name] ?? []) {
       url.searchParams.append(name, String(value));

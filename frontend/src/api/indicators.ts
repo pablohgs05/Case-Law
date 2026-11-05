@@ -96,6 +96,36 @@ export type OutcomeShare = {
   outcomes: OutcomeCount[];
 };
 
+// What `/indicators/concentration` answers: the same cut, counted by judging
+// body and by reporting judge. Each `name` is the value exactly as the source
+// wrote it — the value the search's own filter takes — so it is never trimmed
+// or normalised here. `other` folds every group past `limit`, and the
+// decisions with no value recorded, into one slice.
+export type ConcentrationGroup = {
+  name: string;
+  decisions: number | null;
+  share: number | null;
+};
+
+export type ConcentrationOther = {
+  groups: number | null;
+  decisions: number | null;
+  share: number | null;
+};
+
+export type ConcentrationDimension = {
+  groups: ConcentrationGroup[];
+  other: ConcentrationOther | null;
+  missing: number | null;
+};
+
+export type Concentration = {
+  total: number | null;
+  limit: number | null;
+  judging_bodies: ConcentrationDimension;
+  reporting_judges: ConcentrationDimension;
+};
+
 // An indicator that takes no search parameter failed: the coverage, or the
 // freshness. Only the status is kept; there is no filter to point back to.
 export class IndicatorRequestError extends Error {
@@ -344,6 +374,78 @@ export async function getOutcomeShare(
   }
 
   return readOutcomeShare(await response.json());
+}
+
+// Kept exactly as sent, spaces included: a trimmed name would no longer be the
+// value the filter compares, and its slice would open onto nothing.
+const exactName = (value: unknown) => (typeof value === 'string' && value.trim() ? value : null);
+
+function readConcentrationGroup(value: unknown): ConcentrationGroup | null {
+  const row = (value ?? {}) as Record<string, unknown>;
+  const name = exactName(row.name);
+
+  if (!name) {
+    return null;
+  }
+
+  return { name, decisions: count(row.decisions), share: count(row.share) };
+}
+
+function readConcentrationDimension(value: unknown): ConcentrationDimension {
+  const raw = (value ?? {}) as Record<string, unknown>;
+  const other =
+    raw.other && typeof raw.other === 'object' ? (raw.other as Record<string, unknown>) : null;
+
+  return {
+    groups: Array.isArray(raw.groups)
+      ? raw.groups
+          .map(readConcentrationGroup)
+          .filter((row): row is ConcentrationGroup => row !== null)
+      : [],
+    other: other
+      ? {
+          groups: count(other.groups),
+          decisions: count(other.decisions),
+          share: count(other.share),
+        }
+      : null,
+    missing: count(raw.missing),
+  };
+}
+
+export function readConcentration(body: unknown): Concentration {
+  const raw = (body ?? {}) as Record<string, unknown>;
+
+  return {
+    total: count(raw.total),
+    limit: count(raw.limit),
+    judging_bodies: readConcentrationDimension(raw.judging_bodies),
+    reporting_judges: readConcentrationDimension(raw.reporting_judges),
+  };
+}
+
+export async function getConcentration(
+  params: VolumeParams,
+  options: { limit?: number; signal?: AbortSignal } = {},
+): Promise<Concentration> {
+  assertApiConfiguration();
+
+  const url = cutUrl('/indicators/concentration', params);
+  if (options.limit) {
+    url.searchParams.set('limit', String(options.limit));
+  }
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: apiHeaders(),
+    signal: options.signal,
+  });
+
+  if (!response.ok) {
+    throw new SearchRequestError(response.status, await readDetail(response));
+  }
+
+  return readConcentration(await response.json());
 }
 
 export function readLastUpdate(body: unknown): LastUpdate {

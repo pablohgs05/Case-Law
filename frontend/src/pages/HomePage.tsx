@@ -67,6 +67,11 @@ import { useSearchSession, useSessionState } from '../search/session';
 
 const FILTERS_PANEL_ID = 'search-filters';
 
+// The search already reads quotation marks as one phrase. What the box
+// accepts is only discoverable if the screen says so, and an example says it
+// shorter than a sentence about syntax.
+const EXACT_PHRASE_EXAMPLE = '"prescrição intercorrente"';
+
 const DATE_INPUTS: Record<DateGroup, string[]> = {
   judged: [`${FILTERS_PANEL_ID}-judged-from`, `${FILTERS_PANEL_ID}-judged-to`],
   published: [`${FILTERS_PANEL_ID}-published-from`, `${FILTERS_PANEL_ID}-published-to`],
@@ -207,6 +212,7 @@ function HomePage() {
   // while a page loads or after one failed: no range is shown that was not read.
   const [pageInfo, setPageInfo] = useSessionState<PageInfo | null>('pageInfo', null);
   const formRef = useRef<HTMLFormElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [indicatorSelection, setIndicatorSelection] = useSessionState<IndicatorSelection | null>(
     'indicatorSelection',
     null,
@@ -702,6 +708,14 @@ function HomePage() {
     resetBuffer();
     void runSearch({ ...applied, filters: remove(applied.filters), page: 1 });
   };
+  // The example fills the box and leaves the reader in it: they see where the
+  // quotation marks go, then search it or type over it. It does not search on
+  // its own, so a click never replaces results somebody else asked for.
+  const fillWithExactPhrase = () => {
+    setValue(EXACT_PHRASE_EXAMPLE);
+    inputRef.current?.focus();
+  };
+
   const searchForm = (
     <form ref={formRef} className="search-form" onSubmit={handleSubmit} noValidate>
       <div className="legal-search">
@@ -714,6 +728,7 @@ function HomePage() {
 
           <input
             id="legal-search-input"
+            ref={inputRef}
             type="search"
             value={value}
             onChange={(event) => setValue(event.target.value)}
@@ -748,6 +763,21 @@ function HomePage() {
           </button>
         </div>
       </div>
+
+      {/* One muted line under the bar, always there and never in the way: it
+          takes a row of the band, steals no focus and searches nothing by
+          itself. Whoever already knows the syntax reads past it. */}
+      <p className="search-syntax">
+        <span>Use aspas para pesquisar a frase exata.</span>
+        <button
+          type="button"
+          className="search-syntax__example"
+          onClick={fillWithExactPhrase}
+          disabled={isLoading}
+        >
+          Exemplo: {EXACT_PHRASE_EXAMPLE}
+        </button>
+      </p>
 
       {/* Below the bar, over the screen, so opening them takes nothing
           from the list. */}

@@ -185,6 +185,8 @@ describe('the top bar', () => {
       'Sair',
       'Filtros',
       'Pesquisar',
+      // A dica de sintaxe fica abaixo da barra, e o exemplo dela é um botão.
+      'Exemplo: "prescrição intercorrente"',
     ]);
     expect(bar.getByText('Ana Almeida Costa')).toBeInTheDocument();
   });

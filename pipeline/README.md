@@ -198,46 +198,6 @@ pipeline/
     └── models/          SQL models
 ```
 
-## Adding a court
-
-The link back to the official document is not returned by the court API — it is
-built. `core.decisao` assembles it by substituting the record's identifier into a
-template that lives in `seeds/fonte.csv`, one row per source:
-
-```csv
-codigo,nome,tribunal_sigla,url_base,url_documento_template,...
-tjdft-jurisdf,TJDFT JurisDF,TJDFT,https://jurisdf.tjdft.jus.br,https://jurisdf.tjdft.jus.br/detalhes/{identificador},...
-```
-
-`{identificador}` is the only placeholder. Everything that varies per court —
-the pattern, the sigla, the coverage window — is read from this row, so a change
-of URL pattern is a change to the CSV and not to any query.
-
-Four steps, in this order:
-
-1. **Write the connector** in `sources/`, following `tjdft.py`. It lands its own
-   table under `raw.`, named after the court.
-2. **Add the row** to `seeds/fonte.csv`. The `codigo` is what ties the three
-   pieces together, so pick it before writing SQL.
-3. **Write the model.** Copy `models/core_decisao.sql`, point it at the new raw
-   table, and set the `fonte_codigo` literal in the `bruto` CTE to the `codigo`
-   from step 2. That literal is the only place the source is named; the sigla and
-   the URL come from the seed through the join.
-4. **Union the sources.** `core.decisao` reads one raw table today. A second
-   court means turning the `bruto` CTE into a `UNION ALL` of both, or splitting
-   per-court models and unioning them in `core.decisao`.
-
-Step 4 is the one with real work in it. Steps 1 to 3 are mechanical.
-
-A court whose API does not give a stable per-document identifier cannot have a
-link built this way. `url_fonte` is under a `not_null` audit, so the build fails
-rather than publishing rows whose links go nowhere.
-
-## What is not committed
-
-Credentials (`.dlt/secrets.toml`, `.env`), the loaded data, and the caches and
-logs both tools write while running.
-
 ## Publishing to the servers
 
 The pipeline runs on a development machine and the servers only host. This is the

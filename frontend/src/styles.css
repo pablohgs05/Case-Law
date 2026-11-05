@@ -4690,3 +4690,52 @@ input:focus-visible {
     transform: rotate(360deg);
   }
 }
+
+/* Asking this tool to read a thesis the court did not write, and what comes
+   back. Set apart from the court's own words on purpose: the reading is ours,
+   and a reader who skims must not take it for the acórdão's. */
+.decision-result-card__read-thesis {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--search-border);
+  border-radius: 999px;
+  background: var(--search-surface);
+  color: var(--search-primary);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.decision-result-card__read-thesis:hover:not(:disabled) {
+  background: var(--search-soft);
+}
+
+.decision-result-card__read-thesis:disabled {
+  color: var(--search-muted);
+  cursor: progress;
+}
+
+.decision-result-card__read {
+  margin-top: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border-left: 3px solid var(--search-border);
+  background: var(--search-soft);
+}
+
+.decision-result-card__read-thesis-text {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.decision-result-card__read-passage {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--search-muted);
+  font-style: italic;
+}

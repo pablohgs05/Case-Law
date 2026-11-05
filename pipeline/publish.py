@@ -20,6 +20,8 @@ TABLES = (
     "classe_processual",
     "carga",
     "decisao",
+    "termo_frequente",
+    "busca_ampla",
     "precedente",
     "decisao_precedente",
     "doutrina",
@@ -42,6 +44,20 @@ INDEXES = (
     f"CREATE INDEX ON {STAGING_SCHEMA}.decisao (tribunal_sigla, relator)",
     f"CREATE INDEX ON {STAGING_SCHEMA}.decisao (processo)",
     f"CREATE INDEX ON {STAGING_SCHEMA}.decisao (classe_cnj)",
+    # The first page of a broad search is served from here and nowhere else, so
+    # this index is the story: it carries every column the page asks for, in
+    # the order it asks for them, which is what turns 95 seconds into a single
+    # index read. Without it the table is a second copy of the slow path.
+    (
+        f"CREATE INDEX ON {STAGING_SCHEMA}.busca_ampla "
+        "(lexema, rank DESC, data_referencia DESC, "
+        "fonte_codigo DESC, identificador_fonte DESC)"
+    ),
+    (
+        f"CREATE UNIQUE INDEX ON {STAGING_SCHEMA}.busca_ampla "
+        "(lexema, fonte_codigo, identificador_fonte)"
+    ),
+    f"CREATE UNIQUE INDEX ON {STAGING_SCHEMA}.termo_frequente (lexema)",
     # The copy is a plain SELECT, so no index comes with it. These mirror what
     # the models declare: without them the detail screen reads 28 thousand
     # suggestions sequentially on every decision opened.

@@ -13,6 +13,7 @@ venv/
 .ruff_cache/
 .mypy_cache/
 .coverage
+coverage.xml
 htmlcov/
 
 # Node / frontend
@@ -21,6 +22,14 @@ dist/
 dist-ssr/
 .vite/
 *.local
+
+# Coverage reports, written by the test runners on every run and read by
+# SonarQube. Regenerated, never reviewed, and the HTML one alone is 70 files.
+coverage/
+
+# The ADK dev panel keeps one session database per agent. It holds whatever was
+# typed into the panel, so it is local by definition.
+.adk/
 
 # Data files — the pipeline output does not belong in git
 *.dump

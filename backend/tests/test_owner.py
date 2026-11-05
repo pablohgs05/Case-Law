@@ -26,7 +26,13 @@ SHIPPERS = (
     Path(".github/workflows/deploy-producao.yml"),
 )
 
-CITATION = re.compile(r"[A-Za-z0-9_./-]*identidade\.sql")
+# Built from the schema files themselves, so adding one puts it under the
+# same scrutiny without this pattern being edited.
+CITATION = re.compile(
+    r"[A-Za-z0-9_./-]*(?:"
+    + "|".join(re.escape(schema.name) for schema in owner.SCHEMAS)
+    + r")"
+)
 
 
 def _copied_into_the_image() -> list[Path]:
@@ -63,10 +69,12 @@ def test_the_schema_travels_with_the_code() -> None:
     """
     carried = _copied_into_the_image()
 
-    assert owner.SCHEMA.exists()
-    assert any(owner.SCHEMA.is_relative_to(directory) for directory in carried), (
-        f"{owner.SCHEMA} is not in the image, which carries {carried}"
-    )
+    assert owner.SCHEMAS, "no schema found beside the module"
+
+    for schema in owner.SCHEMAS:
+        assert any(schema.is_relative_to(directory) for directory in carried), (
+            f"{schema} is not in the image, which carries {carried}"
+        )
 
 
 def test_everything_that_ships_the_schema_points_at_the_same_file() -> None:
@@ -75,7 +83,7 @@ def test_everything_that_ships_the_schema_points_at_the_same_file() -> None:
     upload it, and the command applies it — if they can disagree about where it
     is, a database gets one shape and the code assumes another.
     """
-    expected = {owner.SCHEMA.relative_to(REPOSITORY).as_posix()}
+    expected = {schema.relative_to(REPOSITORY).as_posix() for schema in owner.SCHEMAS}
 
     for relative in SHIPPERS:
         cited = _files_cited_in((REPOSITORY / relative).read_text(encoding="utf-8"))
@@ -96,10 +104,11 @@ def test_migrate_applies_the_schema_and_may_be_run_again(
 
     with db.cursor() as cursor:
         cursor.execute(
-            "SELECT COUNT(*) AS tabelas FROM information_schema.tables "
-            "WHERE table_schema = 'identidade'"
+            "SELECT COUNT(DISTINCT table_schema) AS schemas "
+            "FROM information_schema.tables "
+            "WHERE table_schema IN ('identidade', 'leitura')"
         )
         found = cursor.fetchone()
 
     assert found is not None
-    assert found["tabelas"] == 1
+    assert found["schemas"] == len(owner.SCHEMAS)

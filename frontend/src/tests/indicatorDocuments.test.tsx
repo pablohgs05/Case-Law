@@ -1,6 +1,6 @@
 ﻿import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from './renderApp';
 import { selectIndicator } from '../search/indicatorSelection';
 import TimelineChart from '../components/TimelineChart';
@@ -631,4 +631,37 @@ it('a rapid double click opens one selection, makes one request and needs only o
   ).toHaveLength(1);
   await user.click(within(drawer).getByRole('button', { name: 'Voltar ao Panorama' }));
   expect(screen.queryByRole('dialog')).toBeNull();
+});
+
+describe('o trecho destacado na lista vinda do indicador', () => {
+  const original = { q: 'dano moral' };
+
+  it('aponta para o dispositivo quando o indicador é o de resultado', () => {
+    // A classificação foi lida do dispositivo, então é ali que o trecho é
+    // recortado. Medido sobre decisões com tese escrita, destacar os termos
+    // da busca punha 31,5% dos trechos na "questão em discussão" e 2,25% na
+    // tese — a pergunta no lugar da resposta.
+    const selected = selectIndicator(original, { kind: 'outcome', outcome: 'negado', count: 3 });
+
+    expect(selected.params?.highlight).toBe('resultado');
+  });
+
+  it('não pede destaque nos indicadores sem inferência nossa', () => {
+    // Tribunal e período vêm de campo copiado da fonte: não há passagem que
+    // justifique a classificação, e os termos do leitor continuam certos.
+    const porTribunal = selectIndicator(original, { kind: 'court', court: 'STJ', count: 3 });
+    const porPeriodo = selectIndicator(original, {
+      kind: 'period',
+      period: '2026-03',
+      granularity: 'month',
+      count: 3,
+    });
+
+    expect(porTribunal.params?.highlight).toBeUndefined();
+    expect(porPeriodo.params?.highlight).toBeUndefined();
+  });
+
+  it('deixa a busca comum intocada', () => {
+    expect(original).not.toHaveProperty('highlight');
+  });
 });

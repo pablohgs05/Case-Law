@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd">
+  <responseDate>2026-10-25T02:43:58Z</responseDate>
+  <request verb="ListRecords" metadataPrefix="oai_dc" set="col_2011_8">https://bdjur.stj.jus.br/server/oai/request</request>
+  <ListRecords>
+  <record>
+    <header>
+      <identifier>oai:bdjur.stj.jus.br:2011/217041</identifier>
+      <datestamp>2026-10-16T00:05:53Z</datestamp>
+      <setSpec>com_2011_2</setSpec>
+      <setSpec>col_2011_8</setSpec>
+    </header>
+    <metadata>
+      <oai_dc:dc xmlns:doc="http://www.lyncode.com/xoai" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
+   <dc:title>Da accountability cívica ao lawfare local : a metamorfose funcional da ação popular na judicialização da política municipal pernambucana</dc:title>
+   <dc:title>From civic accountability to local lawfare : the functional metamorphosis of the popular action in the judicialization of municipal politics in Pernambuco</dc:title>
+   <dc:creator>Gomes Neto, José Mario Wanderley</dc:creator>
+   <dc:description>Metodologia -- Ação popular: do ideal cívico à estratégia política -- Entre a desigualdade cívica e a estratégia política. A práxis do litígio e o desvio de finalidade.</dc:description>
+   <dc:date>2026-10-15T03:54:41Z</dc:date>
+   <dc:date>2026</dc:date>
+   <dc:type>Artigo</dc:type>
+   <dc:identifier>Revista Direito e Liberdade: RDL, Natal, v. 28, n. 1, jan./abr. 2026.</dc:identifier>
+   <dc:identifier>21771758</dc:identifier>
+   <dc:identifier>https://bdjur.stj.jus.br/handle/2011/217041</dc:identifier>
+   <dc:language>pt-BR</dc:language>
+   <dc:rights>Acesso aberto</dc:rights>
+   <dc:format>application/pdf</dc:format>
+   <dc:publisher>Escola da Magistratura do Rio Grande do Norte</dc:publisher>
+</oai_dc:dc>
+    </metadata>
+  </record>
+  <record>
+    <header>
+      <identifier>oai:bdjur.stj.jus.br:2011/156039</identifier>
+      <datestamp>2026-05-18T11:13:05Z</datestamp>
+      <setSpec>com_2011_2</setSpec>
+      <setSpec>col_2011_8</setSpec>
+    </header>
+    <metadata>
+      <oai_dc:dc xmlns:doc="http://www.lyncode.com/xoai" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
+   <dc:title>Delação premiada à luz do direito probatório no Estado Democrático</dc:title>
+   <dc:creator>Paulo Junior, José Marinho</dc:creator>
+   <dc:date>2021-07-27T18:51:42Z</dc:date>
+   <dc:date>2021-07-27T18:51:42Z</dc:date>
+   <dc:date>2008</dc:date>
+   <dc:type>Artigo</dc:type>
+   <dc:identifier>Justiça &amp; Cidadania, Rio de Janeiro, v. 10, n. 93, p. 44-47, abr. 2008.</dc:identifier>
+   <dc:identifier>https://bdjur.stj.jus.br/handle/2011/156039</dc:identifier>
+   <dc:language>pt-BR</dc:language>
+   <dc:format>application/pdf</dc:format>
+   <dc:publisher>JC</dc:publisher>
+</oai_dc:dc>
+    </metadata>
+  </record>
+  <record>
+    <header>
+      <identifier>oai:bdjur.stj.jus.br:2011/169101</identifier>
+      <datestamp>2026-05-18T11:13:23Z</datestamp>
+      <setSpec>com_2011_2</setSpec>
+      <setSpec>col_2011_8</setSpec>
+    </header>
+    <metadata>
+      <oai_dc:dc xmlns:doc="http://www.lyncode.com/xoai" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
+   <dc:title>Como concebemos a justiça: o debate entre Rawls e Sandel e a sua aplicação a partir da análise de situações da prática jurídica e social brasileira = How we conceptualize the justice: the debate between Rawls and Sandel and your application from analisis of situations of Brazilian legal and social practice</dc:title>
+   <dc:creator>Frascati Junior, Nicola</dc:creator>
+   <dc:creator>Frascati, Jacqueline Sophie Perioto Guhur</dc:creator>
+   <dc:creator>Francisco, José Antonio</dc:creator>
+   <dc:subject>Justiça</dc:subject>
+   <dc:subject>Boa-fé</dc:subject>
+   <dc:subject>Rawls, John, 1921-2002</dc:subject>
+   <dc:subject>Sandel, Michael J., 1953-</dc:subject>
+   <dc:subject>Teoria liberal-igualitária</dc:subject>
+   <dc:subject>Dialética histórico-estrutural</dc:subject>
+   <dc:subject>Boa fé</dc:subject>
+   <dc:subject>Princípio da boa fé</dc:subject>
+   <dc:subject>Princípio da boa-fé</dc:subject>
+   <dc:date>2022-10-03T17:27:16Z</dc:date>
+   <dc:date>2022-10-03T17:27:16Z</dc:date>
+   <dc:date>2021</dc:date>
+   <dc:type>Artigo</dc:type>
+   <dc:identifier>Revista Gralha Azul: Periódico Científico da Escola Judicial do Paraná - EJUD, Curitiba, v. 1, n. 4, p. 35-49, fev./mar. 2021.</dc:identifier>
+   <dc:identifier>https://bdjur.stj.jus.br/handle/2011/169101</dc:identifier>
+   <dc:language>pt-BR</dc:language>
+   <dc:format>application/pdf</dc:format>
+   <dc:publisher>Tribunal de Justiça do Estado do Paraná</dc:publisher>
+</oai_dc:dc>
+    </metadata>
+  </record>
+  <record>
+    <header status="deleted">
+      <identifier>oai:bdjur.stj.jus.br:2011/114535</identifier>
+      <datestamp>2025-02-09T20:37:12Z</datestamp>
+      <setSpec>com_2011_2</setSpec>
+      <setSpec>col_2011_8</setSpec>
+    </header>
+  </record>
+  <record>
+    <header>
+      <identifier>oai:bdjur.stj.jus.br:2011/127476</identifier>
+      <datestamp>2026-05-18T12:52:07Z</datestamp>
+      <setSpec>com_2011_2</setSpec>
+      <setSpec>col_2011_8</setSpec>
+    </header>
+    <metadata>
+      <oai_dc:dc xmlns:doc="http://www.lyncode.com/xoai" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
+   <dc:title>La necesidad de cambios en los modelos de solución de conflictos: las ventajas de los MASC</dc:title>
+   <dc:title>La necesidad de cambios en los modelos de solución de conflictos: las ventajas de los Medios Alternativos de Resolución de Conflictos</dc:title>
+   <dc:creator>Carretero Morales, Emiliano</dc:creator>
+   <dc:subject>Arbitragem, Espanha</dc:subject>
+   <dc:subject>Advogado, poderes e atribuições, Espanha</dc:subject>
+   <dc:subject>Juiz, Espanha</dc:subject>
+   <dc:subject>Tutela jurisdicional, Espanha</dc:subject>
+   <dc:subject>Poder judiciário, Espanha</dc:subject>
+   <dc:subject>Administração da justiça, Espanha</dc:subject>
+   <dc:subject>Procedimento arbitral</dc:subject>
+   <dc:subject>Bacharel em direito</dc:subject>
+   <dc:subject>Tutela jurídica</dc:subject>
+   <dc:subject>Administração judiciária</dc:subject>
+   <dc:subject>Gestão da justiça</dc:subject>
+   <dc:description>Aborda a questão da crise dos sistemas tradicionais de resolução de conflitos e da judicialização excessiva de conflitos. Aborda a necessidade de mudanças nos modelos de solução tradicionais e apresenta o conceito de meios alternativos de solução de conflitos.</dc:description>
+   <dc:date>2018-12-13T18:15:43Z</dc:date>
+   <dc:date>2018-12-13T18:15:43Z</dc:date>
+   <dc:date>2018</dc:date>
+   <dc:type>Artigo</dc:type>
+   <dc:identifier>Revista da EMERJ, Rio de Janeiro, v. 20, n. 3, p. 159-179, set./dez. 2018.</dc:identifier>
+   <dc:identifier>https://bdjur.stj.jus.br/handle/2011/127476</dc:identifier>
+   <dc:language>es</dc:language>
+   <dc:format>application/pdf</dc:format>
+   <dc:publisher>Escola da Magistratura do Estado do Rio de Janeiro (EMERJ)</dc:publisher>
+</oai_dc:dc>
+    </metadata>
+  </record>
+  <record>
+    <header>
+      <identifier>oai:bdjur.stj.jus.br:2011/38622</identifier>
+      <datestamp>2026-05-18T14:35:50Z</datestamp>
+      <setSpec>com_2011_2</setSpec>
+      <setSpec>col_2011_8</setSpec>
+    </header>
+    <metadata>
+      <oai_dc:dc xmlns:doc="http://www.lyncode.com/xoai" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
+   <dc:title>Crimes hediondos e progressão de regime</dc:title>
+   <dc:creator>Borges, Paulo César Corrêa</dc:creator>
+   <dc:subject>Crime hediondo, jurisprudência, Brasil</dc:subject>
+   <dc:subject>Princípio constitucional, Brasil</dc:subject>
+   <dc:subject>Tortura, Brasil</dc:subject>
+   <dc:subject>Execução (processo penal), Brasil</dc:subject>
+   <dc:subject>Pena, Brasil</dc:subject>
+   <dc:subject>Crime hediondo, jurisprudência, Brasil</dc:subject>
+   <dc:subject>Princípio constitucional, Brasil</dc:subject>
+   <dc:subject>Tortura, Brasil</dc:subject>
+   <dc:subject>Racismo, Brasil</dc:subject>
+   <dc:subject>Execução (processo penal), Brasil</dc:subject>
+   <dc:subject>Execução penal</dc:subject>
+   <dc:subject>Pena (direito penal)</dc:subject>
+   <dc:description>Explica que a progressão do regime de pena se tornou o centro dos debates acadêmicos e jurisprudenciais, a partir do advento de dois diplomas legais: Leis 8.072/90 e 10.792/03. Afirma que a Lei dos crimes hediondos vedou expressamente a progressão de regime, pretendendo estabelecer um tratamento rigoroso para aqueles crimes mais graves previstos na legislação brasileira, fixando o cumprimento da pena dos crimes que arrolou como sendo hediondos integralmente no regime fechado.</dc:description>
+   <dc:date>2011-06-20T14:20:25Z</dc:date>
+   <dc:date>2011-06-20T14:20:25Z</dc:date>
+   <dc:date>2007</dc:date>
+   <dc:type>Artigo</dc:type>
+   <dc:identifier>Revista da EMERJ, Rio de Janeiro, v. 10, n. 37, p. 266-278, 2007.</dc:identifier>
+   <dc:identifier>https://bdjur.stj.jus.br/handle/2011/38622</dc:identifier>
+   <dc:language>pt_BR</dc:language>
+   <dc:rights>Restricted access</dc:rights>
+   <dc:format>application/pdf</dc:format>
+</oai_dc:dc>
+    </metadata>
+  </record>
+  <record>
+    <header>
+      <identifier>oai:bdjur.stj.jus.br:2011/18979</identifier>
+      <datestamp>2026-05-18T12:43:17Z</datestamp>
+      <setSpec>com_2011_2</setSpec>
+      <setSpec>col_2011_8</setSpec>
+    </header>
+    <metadata>
+      <oai_dc:dc xmlns:doc="http://www.lyncode.com/xoai" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
+   <dc:title>Garantia no emprego</dc:title>
+   <dc:creator>Silva, Wilson Pocidonio da</dc:creator>
+   <dc:subject>Empregado, estabilidade, Brasil</dc:subject>
+   <dc:subject>Acidente do trabalho, Brasil</dc:subject>
+   <dc:subject>Auxílio-doença, Brasil</dc:subject>
+   <dc:subject>Trabalho, acidente</dc:subject>
+   <dc:subject>Auxílio-enfermidade</dc:subject>
+   <dc:subject>Seguro-doença</dc:subject>
+   <dc:description>Examina o artigo 118 da Lei nº 8.113, de 24 de julho de 1991, que dispõe sobre o segurado que sofreu acidente do trabalho e da garantia do seu contrato de trabalho na empresa, após a cessação do auxílio-doença.</dc:description>
+   <dc:date>2008-11-28T14:22:46Z</dc:date>
+   <dc:date>2008-11-28T14:22:46Z</dc:date>
+   <dc:date>1995</dc:date>
+   <dc:type>Artigo</dc:type>
+   <dc:identifier>SILVA, Wilson Pocidonio da. Garantia no emprego. Revista do Tribunal Regional do Trabalho da 15ª Região, Campinas, n. 7, p. 14-16, 1995. Disponível em:&lt;http://trt15.gov.br/escola_da_magistratura/Rev7Art2.pdf&gt;. Acesso em: 28 nov. 2008.</dc:identifier>
+   <dc:identifier>http://hdl.handle.net/2011/18979</dc:identifier>
+   <dc:language>pt_BR</dc:language>
+   <dc:relation>Revista do Tribunal Regional do Trabalho da 15ª Região</dc:relation>
+   <dc:format>application/pdf</dc:format>
+</oai_dc:dc>
+    </metadata>
+  </record>
+    <resumptionToken completeListSize="20597" cursor="0">oai_dc///col_2011_8/100</resumptionToken>
+  </ListRecords>
+</OAI-PMH>

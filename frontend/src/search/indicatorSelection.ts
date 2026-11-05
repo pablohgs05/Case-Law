@@ -1,4 +1,4 @@
-import type { SearchParams } from '../api/search';
+import type { Highlight, SearchParams } from '../api/search';
 import { outcomeLabel } from '../components/outcomeFormat';
 
 export type Granularity = 'month' | 'quarter' | 'year';
@@ -59,6 +59,10 @@ export function selectIndicator(
     label = outcomeLabel(point.outcome);
     compatible = !params.resultado?.length || params.resultado.includes(point.outcome);
     params.resultado = [point.outcome];
+    // The classification was read from the dispositive, so that is where the
+    // snippet is cut. Court and period are copied fields: no passage to point
+    // at, and the reader's own terms stay the right thing to highlight.
+    params.highlight = 'resultado' satisfies Highlight;
   } else {
     label = formatPeriodLabel(point.period, point.granularity);
     const [year, month] = point.period.split('-').map(Number);

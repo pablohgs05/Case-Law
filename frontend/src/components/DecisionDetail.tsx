@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowSquareOut } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowSquareOut, WarningCircle } from '@phosphor-icons/react';
 
-import { DecisionRequestError, getDecision, type Decision } from '../api/decisions';
+import { DecisionRequestError, getDecision, readThesis, type Decision } from '../api/decisions';
+import { readCitedPrecedents } from '../api/precedents';
+import CitedPrecedents from './CitedPrecedents';
+import RelatedDoctrine from './RelatedDoctrine';
 import {
   DELIBERATION_LABELS,
   deliberationStateOf,
@@ -197,10 +200,54 @@ function DecisionContent({ decision, titleId }: DecisionContentProps) {
         </div>
       )}
 
+      <Thesis decision={decision} headingId={`${titleId}-tese`} />
+
       <Ementa decision={decision} headingId={`${titleId}-ementa`} />
+
+      <CitedPrecedents
+        precedents={readCitedPrecedents(decision.precedents)}
+        headingId={`${titleId}-precedentes`}
+      />
+
+      {/* Last of the three, because it is the furthest from the decision:
+          what it settled, what it cited, and what other people wrote. */}
+      <RelatedDoctrine
+        key={`${decision.source}:${decision.identifier}`}
+        source={decision.source}
+        identifier={decision.identifier}
+        headingId={`${titleId}-doutrina`}
+      />
 
       <OfficialSource decision={decision} />
     </>
+  );
+}
+
+// Open, not folded: the detail is the reading screen, and someone who got this
+// far wants the thesis. The list folds it because six cards open stop being
+// scannable; here there is one.
+//
+// The label carries the origin. These are the court's own words, so they can
+// be quoted as they stand — and on a screen that will also show what we
+// inferred, the reader has to tell the two apart without being told.
+function Thesis({ decision, headingId }: { decision: Decision; headingId: string }) {
+  const thesis = readThesis(decision.thesis);
+
+  if (thesis.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="decision-detail__thesis" aria-labelledby={headingId}>
+      <h3 id={headingId} className="decision-detail__section-title">
+        Tese firmada pelo tribunal
+      </h3>
+      <ol className="decision-detail__thesis-list">
+        {thesis.map((item, index) => (
+          <li key={index}>{item}</li>
+        ))}
+      </ol>
+    </section>
   );
 }
 
@@ -284,6 +331,23 @@ function Dispositive({ decision }: DispositiveProps) {
 
 type OfficialSourceProps = { decision: Decision };
 
+// What tells one judgement of a case from another on the court's list: when it
+// was judged, which panel judged it and under which class. Only what the
+// decision actually carries — a label with nothing after it helps nobody.
+function identifiers(decision: Decision): string {
+  return (
+    [
+      formatDate(decision.judged_on),
+      normalizeText(decision.judging_body),
+      decision.class_code !== null && Number.isFinite(decision.class_code)
+        ? `classe ${decision.class_code}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(' · ') || 'pela data de julgamento'
+  );
+}
+
 // The same rule as the result card: only a real web address becomes a link,
 // and one the load found broken is shown as unavailable rather than followed.
 // Nothing here asks the court's site anything.
@@ -291,6 +355,11 @@ function OfficialSource({ decision }: OfficialSourceProps) {
   const officialUrl = normalizeOfficialUrl(decision.source_url);
   const available = officialUrl !== null && decision.source_url_reachable !== false;
   const court = normalizeText(decision.court);
+  // The identifier in the link names the case, not the judgement, for part of
+  // the collection — so the court's page opens a list and the reader has to
+  // recognise theirs. Said here, beside the link, because afterwards they are
+  // already on the court's site with no way to tell which line is this one.
+  const shared = available && decision.source_url_shared === true;
 
   return (
     <section className="official-source" aria-label="Fonte oficial">
@@ -301,6 +370,16 @@ function OfficialSource({ decision }: OfficialSourceProps) {
             ? `A decisão no site do ${court || 'tribunal'} prevalece sobre qualquer conteúdo desta página.`
             : 'Link indisponível no momento.'}
         </p>
+
+        {shared && (
+          <p className="official-source__warning">
+            <WarningCircle size={15} weight="fill" aria-hidden="true" />
+            <span>
+              Este processo teve mais de um julgamento, e o site do tribunal pode listar todos.
+              Identifique o seu por <strong>{identifiers(decision)}</strong>.
+            </span>
+          </p>
+        )}
       </div>
 
       {available ? (

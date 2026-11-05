@@ -23,6 +23,7 @@ const STRUCTURED: Decision = {
   small_claims: false,
   source_url: 'https://jurisdf.tjdft.jus.br/detalhes/2119440',
   source_url_reachable: true,
+  source_url_shared: false,
   class_code: 1116,
   judged_on: '2026-06-11',
   published_on: '2026-06-18',
@@ -30,6 +31,7 @@ const STRUCTURED: Decision = {
     'EXECUÇÃO FISCAL. PRESCRIÇÃO INTERCORRENTE. I. CASO EM EXAME 1. Apelação. II. QUESTÃO EM DISCUSSÃO 2. Termo inicial. III. RAZÕES DE DECIDIR 3. O prazo corre. IV. DISPOSITIVO 4. Desprovida.',
   outcome: 'APELAÇÃO CONHECIDA E DESPROVIDA. UNÂNIME.',
   deliberation: 'unanime',
+  thesis: ['O prazo corre da ciência da primeira diligência infrutífera.'],
   full_text_available: true,
   sections: {
     headnote: 'EXECUÇÃO FISCAL. PRESCRIÇÃO INTERCORRENTE.',
@@ -280,6 +282,23 @@ describe('the panel states', () => {
 
     expect(await screen.findByText('JOÃO EGMONT')).toBeInTheDocument();
   });
+
+  it('a doutrina fora do ar não impede ler a decisão', async () => {
+    // A regra de degradação, afirmada em vez de suposta. O resto deste
+    // arquivo já roda com a consulta de doutrina recusada pelo stub, então
+    // sem este teste a garantia ficaria sendo um efeito colateral.
+    await renderDetail(STRUCTURED);
+
+    expect(await screen.findByText(/Não foi possível consultar a doutrina/)).toBeInTheDocument();
+
+    // E tudo que é da decisão continua lá: metadados, ementa e link oficial.
+    expect(screen.getByText('JOÃO EGMONT')).toBeInTheDocument();
+    expect(screen.getByText(/Definir o termo inicial da suspensão/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /oficial/i })).toHaveAttribute(
+      'href',
+      STRUCTURED.source_url,
+    );
+  });
 });
 
 describe('choosing decisions from the results', () => {
@@ -343,5 +362,36 @@ describe('choosing decisions from the results', () => {
 
     expect(await screen.findByRole('heading', { level: 2, name: /0712598/ })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 2, name: /0702646/ })).toBeNull();
+  });
+});
+
+describe('o link que alcança mais de um acórdão', () => {
+  // O número de registro do STJ nomeia o processo, não o julgamento: o acórdão
+  // original, os embargos e o agravo saem sob o mesmo registro, e a página do
+  // tribunal abre uma lista. Sem o aviso o leitor abre a linha errada e cita a
+  // errada — numa ferramenta jurídica isso é grave.
+  const partilhado: Decision = { ...STRUCTURED, source_url_shared: true, class_code: 198 };
+
+  it('avisa, e diz por onde reconhecer o certo', async () => {
+    await renderDetail(partilhado);
+
+    const aviso = screen.getByText(/pode listar todos/);
+
+    expect(aviso).toHaveTextContent('11/06/2026');
+    expect(aviso).toHaveTextContent('3ª TURMA CÍVEL');
+    expect(aviso).toHaveTextContent('classe 198');
+  });
+
+  it('não avisa quando o link alcança um só', async () => {
+    await renderDetail({ ...partilhado, source_url_shared: false });
+
+    expect(screen.queryByText(/pode listar todos/)).not.toBeInTheDocument();
+  });
+
+  it('não avisa quando não há link para seguir', async () => {
+    // Avisar sobre uma lista que ninguém vai abrir só gera ruído.
+    await renderDetail({ ...partilhado, source_url_reachable: false });
+
+    expect(screen.queryByText(/pode listar todos/)).not.toBeInTheDocument();
   });
 });

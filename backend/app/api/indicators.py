@@ -825,3 +825,297 @@ def read_coverage(
         state=fresh.state,
         updated_at=fresh.updated_at,
     )
+
+
+# `indeterminado` is not here: it travels as its own field, the way
+# `unclassified` does above, so no share is ever computed over a guess.
+DECIDED = ("seguiu", "afastou", "distinguiu", "mencionou")
+UNDETERMINED = "indeterminado"
+
+CUT_SIZE_SQL = f"""
+SELECT COUNT(*) AS decisoes
+FROM core.decisao AS d
+WHERE {MATCH}{{filters}}
+"""
+
+# GROUPING SETS so one scan answers both levels: the per-category counts and,
+# in the row where GROUPING is 1, how many distinct decisions cite anything.
+# Summing the per-category decision counts would double a decision that cites
+# two precedents it used differently.
+ADHERENCE_SQL = f"""
+WITH recorte AS (
+    SELECT d.fonte_codigo, d.identificador_fonte
+    FROM core.decisao AS d
+    WHERE {MATCH}{{filters}}
+),
+ligada AS (
+    SELECT dp.aderencia, dp.fonte_codigo, dp.identificador_fonte
+    FROM recorte AS r
+    JOIN core.decisao_precedente AS dp
+        ON dp.fonte_codigo = r.fonte_codigo
+       AND dp.identificador_fonte = r.identificador_fonte
+)
+SELECT
+    GROUPING(aderencia) AS geral,
+    aderencia           AS aderencia,
+    COUNT(*)            AS ligacoes,
+    COUNT(DISTINCT (fonte_codigo, identificador_fonte)) AS decisoes
+FROM ligada
+GROUP BY GROUPING SETS ((aderencia), ())
+"""
+
+MOST_CITED_SQL = f"""
+WITH recorte AS (
+    SELECT d.fonte_codigo, d.identificador_fonte
+    FROM core.decisao AS d
+    WHERE {MATCH}{{filters}}
+)
+SELECT
+    dp.corte     AS corte,
+    dp.tipo      AS tipo,
+    dp.numero    AS numero,
+    p.enunciado  AS enunciado,
+    COUNT(*)     AS citacoes,
+    COUNT(DISTINCT (dp.fonte_codigo, dp.identificador_fonte)) AS decisoes
+FROM recorte AS r
+JOIN core.decisao_precedente AS dp
+    ON dp.fonte_codigo = r.fonte_codigo
+   AND dp.identificador_fonte = r.identificador_fonte
+LEFT JOIN core.precedente AS p
+    ON p.corte = dp.corte AND p.tipo = dp.tipo AND p.numero = dp.numero
+-- A citation that never said which court settled it identifies no precedent,
+-- so it cannot be ranked under one: counting a bare "Tema 793" among the
+-- STJ's would inflate that row with citations of the STF's.
+WHERE dp.corte_declarada
+GROUP BY dp.corte, dp.tipo, dp.numero, p.enunciado
+ORDER BY COUNT(*) DESC, dp.corte, dp.tipo, dp.numero
+LIMIT %(limit)s
+"""
+
+
+class AdherenceCount(BaseModel):
+    adherence: str = Field(
+        description=(
+            "`seguiu`, `afastou`, `distinguiu` or `mencionou`. The fifth the "
+            "model records, `indeterminado`, travels as `undetermined` below."
+        ),
+        examples=["seguiu"],
+    )
+    links: int = Field(
+        description="Citations in this state across the cut.", examples=[1204]
+    )
+    decisions: int = Field(
+        description=(
+            "Distinct decisions carrying at least one. These never add up to "
+            "`citing`: a decision that followed one precedent and set another "
+            "aside counts in both rows, which is why the sum is not offered."
+        ),
+        examples=[1102],
+    )
+    share: float = Field(
+        description="Percentage of `determined`, to one decimal.", examples=[70.2]
+    )
+
+
+class AdherenceShare(BaseModel):
+    decisions: int = Field(
+        description=(
+            "Every decision the same search matches. The first of three "
+            "denominators, and the one a percentage is most often mistaken "
+            "for."
+        ),
+        examples=[1788],
+    )
+    citing: int = Field(
+        description=(
+            "How many of them cite at least one precedent. The second "
+            "denominator: most of the collection cites none, so a share of the "
+            "citing decisions says nothing about the rest."
+        ),
+        examples=[497],
+    )
+    links: int = Field(
+        description=(
+            "Citations in the cut, counting a decision once per precedent it "
+            "cites. `determined` plus `undetermined` equals this."
+        ),
+        examples=[1715],
+    )
+    determined: int = Field(
+        description=(
+            "Citations the wording settled. The third denominator, and the one "
+            "every `share` is over."
+        ),
+        examples=[1301],
+    )
+    undetermined: int = Field(
+        description=(
+            "Citations whose wording decided nothing. Reported rather than "
+            "hidden: a reader who cannot see this cannot tell a strong finding "
+            "from a thin one."
+        ),
+        examples=[414],
+    )
+    adherences: list[AdherenceCount] = Field(
+        description=(
+            "Commonest first, and always the four the model can decide, zero "
+            "included. Empty only when the cut carries no citation at all."
+        )
+    )
+
+
+class MostCited(BaseModel):
+    court: str = Field(description="`STJ` or `STF`.", examples=["STJ"])
+    kind: str = Field(description="`sumula` or `tema`.", examples=["sumula"])
+    number: int = Field(description="The precedent's number.", examples=[7])
+    text: str | None = Field(
+        default=None,
+        description="What it settled, or `null` when the catalogue lacks it.",
+        examples=[
+            "A pretensão de simples reexame de prova não enseja recurso especial."
+        ],
+    )
+    citations: int = Field(
+        description="How many times the cut cites it.", examples=[612]
+    )
+    decisions: int = Field(
+        description="Distinct decisions doing the citing.", examples=[598]
+    )
+
+
+@router.get(
+    "/indicators/adherence",
+    summary="How the search's decisions used the precedents they cite",
+    responses=SEARCH_RESPONSES,
+)
+def read_adherence(
+    connection: Annotated[Connection[DictRow], Depends(get_connection)],
+    q: Annotated[
+        str,
+        Query(
+            min_length=2,
+            description="The same expression the search takes.",
+            examples=["prescrição intercorrente"],
+        ),
+    ],
+    tribunal: Annotated[
+        list[str] | None,
+        Query(description="The same court filter the search takes."),
+    ] = None,
+    date_from: Annotated[date | None, Query(description="Judged on or after.")] = None,
+    date_to: Annotated[date | None, Query(description="Judged on or before.")] = None,
+    published_from: Annotated[
+        date | None, Query(description="Published on or after.")
+    ] = None,
+    published_to: Annotated[
+        date | None, Query(description="Published on or before.")
+    ] = None,
+) -> AdherenceShare:
+    """
+    Whether the courts followed the precedents they cited, over the cut.
+
+    Three denominators travel, because confusing them produces a false
+    percentage: every decision the search matches, the ones citing a precedent
+    at all, and the citations whose wording settled the question. "70%
+    followed" is only ever true of the third.
+    """
+    filters, parameters = _narrowing(
+        q, tribunal, date_from, date_to, published_from, published_to
+    )
+
+    with connection.cursor() as cursor:
+        cursor.execute(CUT_SIZE_SQL.format(filters=filters), parameters)
+        size = cursor.fetchone()
+        decisions = size["decisoes"] if size else 0
+
+        cursor.execute(ADHERENCE_SQL.format(filters=filters), parameters)
+        rows = cursor.fetchall()
+
+    overall = next((row for row in rows if row["geral"] == 1), None)
+    counted = {row["aderencia"]: row for row in rows if row["geral"] == 0}
+
+    links = overall["ligacoes"] if overall else 0
+    citing = overall["decisoes"] if overall else 0
+    undetermined = counted[UNDETERMINED]["ligacoes"] if UNDETERMINED in counted else 0
+    determined = links - undetermined
+
+    adherences = [
+        AdherenceCount(
+            adherence=name,
+            links=counted[name]["ligacoes"] if name in counted else 0,
+            decisions=counted[name]["decisoes"] if name in counted else 0,
+            share=round(counted[name]["ligacoes"] / determined * 100, 1)
+            if determined and name in counted
+            else 0.0,
+        )
+        for name in DECIDED
+    ]
+    adherences.sort(key=lambda item: (-item.links, item.adherence))
+
+    return AdherenceShare(
+        decisions=decisions,
+        citing=citing,
+        links=links,
+        determined=determined,
+        undetermined=undetermined,
+        adherences=adherences if links else [],
+    )
+
+
+@router.get(
+    "/indicators/most-cited-precedents",
+    summary="Which precedents the search's decisions cite most",
+    responses=SEARCH_RESPONSES,
+)
+def read_most_cited(
+    connection: Annotated[Connection[DictRow], Depends(get_connection)],
+    q: Annotated[
+        str,
+        Query(
+            min_length=2,
+            description="The same expression the search takes.",
+            examples=["prescrição intercorrente"],
+        ),
+    ],
+    tribunal: Annotated[
+        list[str] | None,
+        Query(description="The same court filter the search takes."),
+    ] = None,
+    date_from: Annotated[date | None, Query(description="Judged on or after.")] = None,
+    date_to: Annotated[date | None, Query(description="Judged on or before.")] = None,
+    published_from: Annotated[
+        date | None, Query(description="Published on or after.")
+    ] = None,
+    published_to: Annotated[
+        date | None, Query(description="Published on or before.")
+    ] = None,
+    limit: Annotated[int, Query(ge=1, le=50, description="How many to return.")] = 10,
+) -> list[MostCited]:
+    """
+    The precedents the cut leans on, commonest first.
+
+    A precedent the catalogue has no entry for still ranks, with `text` null:
+    how often a court invokes something is worth knowing even when the wording
+    of it is not on hand.
+    """
+    filters, parameters = _narrowing(
+        q, tribunal, date_from, date_to, published_from, published_to
+    )
+
+    with connection.cursor() as cursor:
+        cursor.execute(
+            MOST_CITED_SQL.format(filters=filters), {**parameters, "limit": limit}
+        )
+        rows = cursor.fetchall()
+
+    return [
+        MostCited(
+            court=row["corte"],
+            kind=row["tipo"],
+            number=row["numero"],
+            text=row["enunciado"],
+            citations=row["citacoes"],
+            decisions=row["decisoes"],
+        )
+        for row in rows
+    ]

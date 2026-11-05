@@ -11,6 +11,7 @@ vi.mock('../api/client', () => ({
 }));
 
 const DECISION: Decision = {
+  thesis: [],
   source: 'tjdft-jurisdf',
   identifier: '2119440',
   court: 'TJDFT',
@@ -21,6 +22,7 @@ const DECISION: Decision = {
   small_claims: false,
   source_url: 'https://jurisdf.tjdft.jus.br/detalhes/2119440',
   source_url_reachable: true,
+  source_url_shared: false,
   class_code: 1116,
   judged_on: '2026-06-11',
   published_on: '2026-06-18',

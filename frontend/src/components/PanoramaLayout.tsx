@@ -1,15 +1,17 @@
 import { type ReactNode } from 'react';
 import { useSessionState } from '../search/session';
 import { CaretDown, Info } from '@phosphor-icons/react';
-type Dimension = 'courts' | 'timeline' | 'outcomes';
+type Dimension = 'courts' | 'timeline' | 'outcomes' | 'precedents';
 export default function PanoramaLayout({
   courts,
   temporal,
   outcomes,
+  precedents,
 }: {
   courts: ReactNode;
   temporal: ReactNode;
   outcomes: ReactNode;
+  precedents: ReactNode;
 }) {
   const [expanded, setExpanded] = useSessionState<Dimension | null>('panoramaDimension', 'courts');
   const dimensions: {
@@ -35,6 +37,12 @@ export default function PanoramaLayout({
       title: 'Como os recursos foram julgados',
       category: 'Resultados',
       content: outcomes,
+    },
+    {
+      key: 'precedents',
+      title: 'Como os precedentes foram usados',
+      category: 'Precedentes',
+      content: precedents,
     },
   ];
   return (

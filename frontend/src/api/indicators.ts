@@ -1,4 +1,5 @@
 import { apiBaseUrl, assertApiConfiguration } from './client';
+import { apiHeaders } from './token';
 import { readDetail, SearchRequestError, type SearchParams } from './search';
 
 // What `/indicators/coverage` answers: the base as a whole, never a search. It
@@ -158,9 +159,7 @@ export async function getCoverage(options: { signal?: AbortSignal } = {}): Promi
 
   const response = await fetch(url.toString(), {
     method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
+    headers: apiHeaders(),
     signal: options.signal,
   });
 
@@ -187,8 +186,10 @@ export type VolumeParams = Pick<
   | 'published_to'
 >;
 
-// The cut as the indicators take it, the same for every one of them.
-function cutUrl(path: string, params: VolumeParams): URL {
+// The cut as the indicators take it, the same for every one of them. Exported
+// because every indicator module builds the same URL, and two copies of this
+// would drift the day a filter is added.
+export function cutUrl(path: string, params: VolumeParams): URL {
   const url = new URL(`${apiBaseUrl}${path}`, window.location.origin);
   url.searchParams.set('q', params.q);
 
@@ -240,9 +241,7 @@ export async function getVolumeByCourt(
 
   const response = await fetch(cutUrl('/indicators/volume-by-court', params).toString(), {
     method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
+    headers: apiHeaders(),
     signal: options.signal,
   });
 
@@ -293,9 +292,7 @@ export async function getVolumeByPeriod(
 
   const response = await fetch(url.toString(), {
     method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
+    headers: apiHeaders(),
     signal: options.signal,
   });
 
@@ -338,9 +335,7 @@ export async function getOutcomeShare(
 
   const response = await fetch(cutUrl('/indicators/outcome-share', params).toString(), {
     method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
+    headers: apiHeaders(),
     signal: options.signal,
   });
 
@@ -370,9 +365,7 @@ export async function getLastUpdate(options: { signal?: AbortSignal } = {}): Pro
 
   const response = await fetch(url.toString(), {
     method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
+    headers: apiHeaders(),
     signal: options.signal,
   });
 

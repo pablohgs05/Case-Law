@@ -1,4 +1,5 @@
 import { apiBaseUrl, assertApiConfiguration } from './client';
+import { apiHeaders } from './token';
 
 export type SearchDecisionMatch = {
   source: string;
@@ -13,6 +14,10 @@ export type SearchDecisionMatch = {
   small_claims: string | null;
   source_url: string;
   source_url_reachable: boolean | null;
+  source_url_shared: boolean;
+  // What the court itself settled. Empty on most of the collection, and an
+  // API published before the field existed sends nothing at all.
+  thesis?: string[];
   deliberation: string | null;
   snippet: string;
 };
@@ -37,6 +42,11 @@ export type SearchOrder = 'relevance' | 'date';
 
 export const DEFAULT_ORDER: SearchOrder = 'relevance';
 
+// Which indicator the reader arrived from. The API cuts the snippet around
+// what produced that classification instead of around what was typed; absent,
+// it keeps showing the search terms, which is right in a plain search.
+export type Highlight = 'resultado' | 'aderencia';
+
 export type SearchParams = {
   q: string;
   page?: number;
@@ -49,6 +59,7 @@ export type SearchParams = {
   relator?: string[];
   classe_cnj?: number[];
   resultado?: string[];
+  highlight?: Highlight;
   // `YYYY-MM-DD`, passed through untouched.
   date_from?: string;
   date_to?: string;
@@ -121,12 +132,14 @@ export async function searchDecisions(
     url.searchParams.set('order', params.order);
   }
 
+  if (params.highlight) {
+    url.searchParams.set('highlight', params.highlight);
+  }
+
   const response = await fetch(url.toString(), {
     method: 'GET',
     signal: options.signal,
-    headers: {
-      Accept: 'application/json',
-    },
+    headers: apiHeaders(),
   });
 
   if (!response.ok) {

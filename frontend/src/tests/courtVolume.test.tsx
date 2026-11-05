@@ -156,9 +156,11 @@ afterEach(() => {
 });
 
 describe('the result tabs', () => {
-  it('are Documentos and Panorama, and nothing else', () => {
+  it('are Documentos and Panorama, and nothing else', async () => {
     installApi();
     renderApp();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Pesquisar' }));
 
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual([
       'Documentos',
@@ -174,6 +176,8 @@ describe('the result tabs', () => {
     installApi();
     const user = userEvent.setup();
     renderApp();
+
+    await user.click(screen.getByRole('button', { name: 'Pesquisar' }));
 
     tab('Documentos').focus();
     await user.keyboard('{ArrowRight}');
@@ -207,7 +211,7 @@ describe('the result tabs', () => {
     const asked = searches.length;
 
     await user.click(tab('Panorama'));
-    await panorama().findByText('11 decisões no recorte');
+    await chartCard().findByText('11 decisões no recorte');
     await user.click(tab('Documentos'));
 
     expect(screen.getByLabelText('Pesquisar decisões')).toHaveValue('dano moral');
@@ -229,7 +233,7 @@ describe('the aggregation request', () => {
     await user.type(screen.getByLabelText('Pesquisar decisões'), ' material');
 
     await user.click(tab('Panorama'));
-    await panorama().findByText('11 decisões no recorte');
+    await chartCard().findByText('11 decisões no recorte');
 
     expect(volumes).toHaveLength(1);
     const sent = volumes[0].searchParams;
@@ -245,7 +249,7 @@ describe('the aggregation request', () => {
     renderApp();
     await search(user, 'dano moral');
     await user.click(tab('Panorama'));
-    await panorama().findByText('11 decisões no recorte');
+    await chartCard().findByText('11 decisões no recorte');
 
     // Looked at after each change on its own: another order starts the list on
     // its first page again, which would hide a page that leaked into the cut.
@@ -254,7 +258,7 @@ describe('the aggregation request', () => {
     await screen.findByText(/7–12 de 45/);
     await user.click(tab('Panorama'));
 
-    expect(panorama().getByText('11 decisões no recorte')).toBeVisible();
+    expect(chartCard().getByText('11 decisões no recorte')).toBeVisible();
     expect(volumes).toHaveLength(1);
 
     await user.click(tab('Documentos'));
@@ -262,7 +266,7 @@ describe('the aggregation request', () => {
     await screen.findAllByRole('article');
     await user.click(tab('Panorama'));
 
-    expect(panorama().getByText('11 decisões no recorte')).toBeVisible();
+    expect(chartCard().getByText('11 decisões no recorte')).toBeVisible();
     expect(volumes).toHaveLength(1);
   });
 
@@ -276,7 +280,7 @@ describe('the aggregation request', () => {
     await applyFilters(user, '2026-01-01');
     await search(user, 'dano moral');
     await user.click(tab('Panorama'));
-    await panorama().findByText('11 decisões no recorte');
+    await chartCard().findByText('11 decisões no recorte');
 
     await user.click(tab('Documentos'));
     await applyFilters(user, '2026-06-01');
@@ -285,8 +289,8 @@ describe('the aggregation request', () => {
     await user.click(tab('Panorama'));
 
     // The previous cut's counts are never shown for the new one.
-    expect(panorama().queryByText('11 decisões no recorte')).toBeNull();
-    expect(await panorama().findByText('5 decisões no recorte')).toBeVisible();
+    expect(chartCard().queryByText('11 decisões no recorte')).toBeNull();
+    expect(await chartCard().findByText('5 decisões no recorte')).toBeVisible();
     expect(volumes).toHaveLength(2);
     expect(volumes[1].searchParams.get('date_from')).toBe('2026-06-01');
   });
@@ -308,8 +312,8 @@ describe('the aggregation request', () => {
     await act(async () => answers['dano material'](json(ONE_COURT(5))));
     await act(async () => answers['dano moral'](json(VOLUME)));
 
-    expect(panorama().getByText('5 decisões no recorte')).toBeVisible();
-    expect(panorama().queryByText('11 decisões no recorte')).toBeNull();
+    expect(chartCard().getByText('5 decisões no recorte')).toBeVisible();
+    expect(chartCard().queryByText('11 decisões no recorte')).toBeNull();
   });
 });
 
@@ -320,7 +324,7 @@ describe('the interactive chart', () => {
     renderApp();
     await search(user, 'dano moral');
     await user.click(tab('Panorama'));
-    await panorama().findByText('11 decisões no recorte');
+    await chartCard().findByText('11 decisões no recorte');
 
     expect(bars().map(([court]) => court)).toEqual(RANKED);
   });
@@ -331,7 +335,7 @@ describe('the interactive chart', () => {
     renderApp();
     await search(user, 'dano moral');
     await user.click(tab('Panorama'));
-    await panorama().findByText('11 decisões no recorte');
+    await chartCard().findByText('11 decisões no recorte');
 
     const expected = [
       ['TRF3', '4'],
@@ -388,16 +392,14 @@ describe('the interactive chart', () => {
 });
 
 describe('the panorama without counts to draw', () => {
-  it('asks for a search before there is one, and counts nothing', async () => {
+  it('asks for a search before there is one, and counts nothing', () => {
     const { volumes } = installApi();
-    const user = userEvent.setup();
-    renderApp();
-
-    await user.click(tab('Panorama'));
+    renderApp('/', [], false);
 
     expect(
-      panorama().getByText('Pesquise um tema para ver em quais tribunais ele aparece.'),
+      screen.getByRole('heading', { name: 'Comece pela questão jurídica que deseja investigar' }),
     ).toBeVisible();
+    expect(screen.queryByRole('tab', { name: 'Panorama' })).not.toBeInTheDocument();
     expect(volumes).toHaveLength(0);
     expect(document.querySelector('.volume-chart')).toBeNull();
   });
@@ -415,11 +417,11 @@ describe('the panorama without counts to draw', () => {
       'true',
     );
     expect(chartCard().getByText('Carregando o volume por tribunal')).toBeInTheDocument();
-    expect(panorama().queryByText(/decisões no recorte/)).toBeNull();
+    expect(chartCard().queryByText(/decisões no recorte/)).toBeNull();
 
     await act(async () => answer(json(VOLUME)));
 
-    expect(await panorama().findByText('11 decisões no recorte')).toBeVisible();
+    expect(await chartCard().findByText('11 decisões no recorte')).toBeVisible();
   });
 
   it('says nothing was found, with no empty chart, when the cut has no decision', async () => {
@@ -456,7 +458,7 @@ describe('the panorama without counts to draw', () => {
     failing = false;
     await user.click(chartCard().getByRole('button', { name: 'Tentar novamente' }));
 
-    expect(await panorama().findByText('11 decisões no recorte')).toBeVisible();
+    expect(await chartCard().findByText('11 decisões no recorte')).toBeVisible();
     expect(volumes).toHaveLength(2);
   });
 });

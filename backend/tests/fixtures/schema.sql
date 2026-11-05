@@ -24,17 +24,40 @@ CREATE TABLE core.decisao (
     ementa               TEXT    NOT NULL,
     tipo_texto           TEXT,
     decisao_texto        TEXT,
+    tese                 TEXT,
     resultado            TEXT,
     deliberacao          TEXT,
     turma_recursal       BOOLEAN NOT NULL,
     possui_inteiro_teor  BOOLEAN NOT NULL,
     url_fonte            TEXT    NOT NULL,
     link_valido          BOOLEAN,
+    url_compartilhada    BOOLEAN NOT NULL DEFAULT FALSE,
     ementa_busca         TSVECTOR
 );
 
 CREATE UNIQUE INDEX ON core.decisao (fonte_codigo, identificador_fonte);
 CREATE INDEX ON core.decisao USING gin (ementa_busca);
+
+CREATE TABLE core.termo_frequente (
+    lexema       TEXT   NOT NULL,
+    decisoes     BIGINT NOT NULL,
+    carregado_em TIMESTAMPTZ,
+    PRIMARY KEY (lexema)
+);
+
+CREATE TABLE core.busca_ampla (
+    lexema              TEXT    NOT NULL,
+    posicao             INTEGER NOT NULL,
+    rank                REAL    NOT NULL,
+    data_referencia     DATE    NOT NULL,
+    fonte_codigo        TEXT    NOT NULL,
+    identificador_fonte TEXT    NOT NULL,
+    PRIMARY KEY (lexema, fonte_codigo, identificador_fonte)
+);
+-- The index is the feature, so the fixture carries it too: a test that asks
+-- the planner how it answered has nothing to see without it.
+CREATE INDEX ON core.busca_ampla
+    (lexema, rank DESC, data_referencia DESC, fonte_codigo DESC, identificador_fonte DESC);
 
 CREATE TABLE core.fonte (
     codigo                 TEXT NOT NULL,
@@ -111,3 +134,85 @@ INSERT INTO core.classe_processual VALUES
 (213,   5,    'Recurso Especial'),
 (1321,  5,    'Agravo Regimental'),
 (1331,  5,    'Habeas Corpus');
+
+CREATE TABLE core.precedente (
+    corte        TEXT   NOT NULL,
+    tipo         TEXT   NOT NULL,
+    numero       BIGINT NOT NULL,
+    enunciado    TEXT   NOT NULL,
+    situacao     TEXT,
+    data         DATE,
+    url_fonte    TEXT,
+    origem       TEXT   NOT NULL,
+    transcricoes BIGINT,
+    carregado_em TIMESTAMPTZ,
+    PRIMARY KEY (corte, tipo, numero)
+);
+
+CREATE TABLE core.decisao_precedente (
+    fonte_codigo        TEXT   NOT NULL,
+    identificador_fonte TEXT   NOT NULL,
+    corte               TEXT   NOT NULL,
+    tipo                TEXT   NOT NULL,
+    numero              BIGINT NOT NULL,
+    trecho              TEXT   NOT NULL,
+    resolvida           BOOLEAN NOT NULL,
+    corte_declarada     BOOLEAN NOT NULL DEFAULT TRUE,
+    aderencia           TEXT   NOT NULL,
+    carregado_em        TIMESTAMPTZ,
+    PRIMARY KEY (fonte_codigo, identificador_fonte, corte, tipo, numero)
+);
+
+CREATE TABLE core.doutrina (
+    repositorio          TEXT NOT NULL,
+    identificador_oai    TEXT NOT NULL,
+    titulo               TEXT NOT NULL,
+    titulos_alternativos TEXT[] NOT NULL DEFAULT '{}',
+    autores              TEXT[] NOT NULL DEFAULT '{}',
+    assuntos             TEXT[] NOT NULL DEFAULT '{}',
+    tipo                 TEXT,
+    data                 TEXT,
+    ano                  BIGINT,
+    idioma               TEXT,
+    publicacao           TEXT,
+    resumo               TEXT,
+    referencia           TEXT,
+    url_fonte            TEXT NOT NULL,
+    direitos             TEXT,
+    conjuntos            TEXT[] NOT NULL DEFAULT '{}',
+    arquivada_em         TIMESTAMPTZ,
+    alterada_em          TIMESTAMPTZ,
+    busca                TSVECTOR,
+    carregado_em         TIMESTAMPTZ,
+    PRIMARY KEY (repositorio, identificador_oai)
+);
+
+CREATE INDEX ON core.doutrina USING gin (busca);
+
+CREATE TABLE core.decisao_doutrina (
+    fonte_codigo        TEXT NOT NULL,
+    identificador_fonte TEXT NOT NULL,
+    repositorio         TEXT NOT NULL,
+    identificador_oai   TEXT NOT NULL,
+    nota                DOUBLE PRECISION NOT NULL,
+    termos              BIGINT NOT NULL,
+    termo_mais_forte    DOUBLE PRECISION NOT NULL,
+    casou_em            TEXT[] NOT NULL,
+    distancia           INTEGER NOT NULL,
+    carregado_em        TIMESTAMPTZ,
+    PRIMARY KEY (fonte_codigo, identificador_fonte, repositorio, identificador_oai)
+);
+
+CREATE TABLE core.doutrina_termo (
+    repositorio       TEXT NOT NULL,
+    identificador_oai TEXT NOT NULL,
+    termo             TEXT NOT NULL,
+    decisoes          BIGINT NOT NULL,
+    peso              DOUBLE PRECISION NOT NULL,
+    carregado_em      TIMESTAMPTZ,
+    PRIMARY KEY (repositorio, identificador_oai, termo)
+);
+
+-- Dropped here, created by `app/identidade.sql`: the accounts schema has one
+-- definition, and a copy of it here would be a copy that drifts.
+DROP SCHEMA IF EXISTS identidade CASCADE;

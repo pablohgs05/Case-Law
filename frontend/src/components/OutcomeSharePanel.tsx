@@ -66,7 +66,7 @@ function OutcomeSharePanel({
     <section className="panorama" aria-labelledby="outcome-title">
       <header className="panorama__header" hidden={compact}>
         <div>
-          <p className="panorama__eyebrow">Indicador explicável </p>
+          <p className="panorama__eyebrow">Indicador explicável</p>
           <h2 id="outcome-title" className="panorama__title">
             Como esses recursos terminaram?
           </h2>

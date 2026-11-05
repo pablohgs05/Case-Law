@@ -6,11 +6,15 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api.decisions import (
+    BROAD_PAGE_SQL,
+    BROAD_TERM_SQL,
     COUNT_SQL,
     DETAIL_SQL,
     HIGHLIGHT_SQL,
     MAX_SNIPPET_WORDS,
     PAGE_SQL,
+    PRECEDENTS_SQL,
+    RANKING_PUBLISHED_SQL,
     _fallback_ementa_start,
     _normalize_highlighted_text,
     _safe_snippet,
@@ -53,6 +57,10 @@ DETAIL_ROW = {
     "data_publicacao": date(2026, 2, 26),
     "ementa": "Ementa: Direito do consumidor. Dano moral configurado.",
     "decisao_texto": "RECURSOS PARCIALMENTE PROVIDOS. UNÂNIME.",
+    "tese": (
+        "1. A falha na prestação do serviço gera dano moral in re ipsa. "
+        "2. O valor da indenização observa a razoabilidade."
+    ),
     "possui_inteiro_teor": True,
 }
 
@@ -68,7 +76,10 @@ class FakeCursor:
     def __exit__(self, *_: object) -> None:
         return None
 
-    def execute(self, statement: str, parameters: dict[str, Any]) -> None:
+    def execute(self, statement: str, parameters: dict[str, Any] | None = None) -> None:
+        # Optional, as psycopg has it: a statement with nothing to fill in is
+        # executed with one argument.
+        parameters = parameters or {}
         self.database.statements.append(statement)
         self.database.parameters.append(parameters)
         self.result = self.database.answer(statement, parameters)
@@ -84,6 +95,14 @@ class FakeDatabase:
     def __init__(self, total: int = 1, found: bool = True) -> None:
         self.total = total
         self.found = found
+        # No pre-ranked term unless a test asks for one, so every test written
+        # before `core.busca_ampla` existed still describes the path it was
+        # written about.
+        self.broad_term: str | None = None
+        # The base in front of the server carries the ranking unless a test
+        # says it does not.
+        self.ranking_published = True
+        self.precedents: list[dict[str, Any]] = []
         self.statements: list[str] = []
         self.parameters: list[dict[str, Any]] = []
         self.answer: Callable[[str, dict[str, Any]], list[dict[str, Any]]] = (
@@ -93,6 +112,14 @@ class FakeDatabase:
     def _default_answer(
         self, statement: str, parameters: dict[str, Any]
     ) -> list[dict[str, Any]]:
+        if statement == RANKING_PUBLISHED_SQL:
+            return [{"publicado": self.ranking_published}]
+        if statement == BROAD_TERM_SQL:
+            if self.broad_term is None:
+                return []
+            return [{"lexema": self.broad_term, "decisoes": self.total}]
+        if statement == BROAD_PAGE_SQL:
+            return [MATCHING_ROW] * min(self.total, parameters["limit"])
         if statement == COUNT_SQL:
             return [{"total": self.total}]
         if statement == PAGE_SQL:
@@ -101,6 +128,8 @@ class FakeDatabase:
             return [DETAIL_ROW] if self.found else []
         if statement == HIGHLIGHT_SQL:
             return [{"highlighted": "Ementa: <mark>Dano</mark> moral configurado."}]
+        if statement == PRECEDENTS_SQL:
+            return self.precedents
         raise AssertionError(f"unexpected statement: {statement}")
 
     def cursor(self) -> FakeCursor:
@@ -249,8 +278,72 @@ def test_search_without_filter_runs_the_statements_it_ran_before(
 ) -> None:
     client.get("/decisions", params={"q": "dano moral"})
 
-    assert database.statements == [COUNT_SQL, PAGE_SQL]
+    assert database.statements == [
+        RANKING_PUBLISHED_SQL,
+        BROAD_TERM_SQL,
+        COUNT_SQL,
+        PAGE_SQL,
+    ]
     assert not {"tribunais", "date_from", "date_to"} & set(database.parameters[0])
+
+
+def test_a_pre_ranked_term_never_runs_the_count(
+    client: TestClient, database: FakeDatabase
+) -> None:
+    """
+    The count is the other half of the 95 seconds: counting 765,840 matches
+    needs the same scan as ranking them. A term that has a stored page has a
+    stored total too, so neither statement runs.
+    """
+    database.broad_term = "recurs"
+    database.total = 765840
+
+    body = client.get("/decisions", params={"q": "recurso"}).json()
+
+    assert database.statements == [
+        RANKING_PUBLISHED_SQL,
+        BROAD_TERM_SQL,
+        BROAD_PAGE_SQL,
+    ]
+    assert COUNT_SQL not in database.statements
+    assert PAGE_SQL not in database.statements
+    assert body["total"] == 765840
+
+
+def test_a_base_without_the_ranking_answers_the_old_way(
+    client: TestClient, database: FakeDatabase
+) -> None:
+    """
+    A deploy can land before the base that goes with it. The search then has to
+    be slow, not broken: naming a table that is not there would answer 500 to
+    every search in the product, while the path it replaced is still present
+    and still right.
+    """
+    database.ranking_published = False
+    database.broad_term = "recurs"
+    database.total = 765840
+
+    body = client.get("/decisions", params={"q": "recurso"}).json()
+
+    assert database.statements == [RANKING_PUBLISHED_SQL, COUNT_SQL, PAGE_SQL]
+    assert BROAD_TERM_SQL not in database.statements
+    assert BROAD_PAGE_SQL not in database.statements
+    assert body["total"] == 765840
+
+
+def test_a_pre_ranked_term_asks_the_ranking_table_for_the_page(
+    client: TestClient, database: FakeDatabase
+) -> None:
+    database.broad_term = "recurs"
+    database.total = 765840
+
+    client.get("/decisions", params={"q": "recurso", "page": 3, "page_size": 20})
+
+    pagina = database.parameters[database.statements.index(BROAD_PAGE_SQL)]
+
+    assert pagina["lexema"] == "recurs"
+    assert pagina["offset"] == 40
+    assert pagina["limit"] == 20
 
 
 def test_blank_and_repeated_tribunais_are_ignored(
@@ -695,7 +788,13 @@ def test_the_range_ends_on_the_total_when_the_page_is_the_last_one(
     client: TestClient, database: FakeDatabase
 ) -> None:
     database.answer = lambda statement, parameters: (
-        [{"total": 3}] if statement.startswith(COUNT_SQL) else [MATCHING_ROW]
+        [{"publicado": True}]
+        if statement == RANKING_PUBLISHED_SQL
+        else []
+        if statement == BROAD_TERM_SQL
+        else [{"total": 3}]
+        if statement.startswith(COUNT_SQL)
+        else [MATCHING_ROW]
     )
 
     body = client.get(

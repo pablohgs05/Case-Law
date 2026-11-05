@@ -1,0 +1,170 @@
+// Praxis · Case Law — modelo do data warehouse
+// Levantado do banco em 12/10/2026. Arquitetura ELT em duas camadas:
+// raw (staging, como a fonte devolveu) → core (apresentação, grão único).
+
+Project case_law {
+  database_type: 'PostgreSQL'
+  Note: '''
+    Esquema estrela achatado: `core.decisao` é a tabela-fato, cercada de
+    quatro dimensões. As chaves são naturais, não surrogate — decisão
+    consciente, porque a consulta quente é busca textual paginada e cada
+    junção é trabalho a mais no caminho crítico.
+
+    Os atributos de baixa cardinalidade (órgão julgador, relator) ficam
+    desnormalizados na fato: são 1,6% do tamanho da base contra 3 GB de
+    texto e índice, então normalizá-los economizaria ~40 MB e custaria um
+    JOIN em toda busca.
+  '''
+}
+
+// ───────────────────────────── camada core ─────────────────────────────
+
+Table core.decisao {
+  fonte_codigo            text        [not null, note: 'parte 1 da chave']
+  identificador_fonte     varchar     [not null, note: 'parte 2 da chave: o id do próprio tribunal']
+  identificador_documento varchar     [not null, note: 'token que monta a URL oficial']
+  tribunal_sigla          text        [not null]
+  processo                varchar     [note: 'número CNJ. NÃO é único: 1,33 decisões por processo']
+  orgao_julgador          varchar     [note: '32 valores distintos']
+  relator                 text        [note: '235 valores distintos']
+  classe_cnj              bigint      [note: 'só o TJDFT fornece — 10,9% do acervo']
+  data_julgamento         date
+  data_publicacao         date
+  data_referencia         date        [not null, note: 'julgamento, ou publicação quando falta']
+  ementa                  varchar     [not null, note: 'o resumo que o tribunal escreve']
+  tipo_texto              text
+  decisao_texto           text        [note: 'o dispositivo: a frase final do julgamento']
+  conhecimento            text        [note: 'VAZIA — admissibilidade, adiada por cobertura de 33,6%']
+  resultado               text        [note: 'provido | parcialmente_provido | negado | NULL — 95,9%']
+  deliberacao             text        [note: 'unanime | maioria | NULL — 99,8%']
+  turma_recursal          boolean     [not null]
+  possui_inteiro_teor     boolean     [not null]
+  url_fonte               text        [not null]
+  link_valido             boolean     [note: 'NULL = ninguém verificou ainda, não "quebrado"']
+  carga_id                varchar     [note: 'linhagem: qual carga gravou esta linha']
+  carregado_em            timestamptz [not null]
+  ementa_busca            tsvector    [note: 'índice de texto, configuração portugues_sem_acento']
+
+  indexes {
+    (fonte_codigo, identificador_fonte) [pk, name: 'grão da fato']
+    ementa_busca [type: gin, name: 'busca textual']
+    (data_referencia, fonte_codigo, identificador_fonte) [name: 'ordem por data, estável']
+    (tribunal_sigla, data_referencia)
+    (tribunal_sigla, orgao_julgador)
+    (tribunal_sigla, relator)
+    processo
+    classe_cnj
+  }
+
+  Note: '991.163 linhas. Decisões em segredo de justiça nunca entram.'
+}
+
+Table core.tribunal {
+  sigla  text [pk]
+  nome   text
+  esfera text
+  uf     text
+
+  Note: '2 linhas: STJ e TJDFT.'
+}
+
+Table core.fonte {
+  codigo                 text   [pk]
+  nome                   text
+  tribunal_sigla         text   [not null]
+  url_base               text
+  url_documento_template text   [note: 'o {documento} é trocado pelo identificador_documento']
+  status                 text
+  cobertura_inicio       float
+  cobertura_fim          float
+  observacoes            text
+
+  Note: '2 linhas: stj-espelhos e tjdft-jurisdf. Um tribunal pode ter várias fontes.'
+}
+
+Table core.classe_processual {
+  codigo_cnj bigint [pk]
+  nome       text
+
+  Note: '92 linhas, da tabela processual unificada do CNJ.'
+}
+
+Table core.carga {
+  carga_id              varchar [pk]
+  fonte_codigo          text
+  concluida_em          timestamptz
+  status                text    [note: 'concluida | falhou']
+  registros_lidos       bigint
+  registros_gravados    bigint
+  descartados_sigilo    bigint
+  links_invalidos       bigint
+  links_nao_verificados bigint
+
+  Note: '145 linhas. A dimensão de linhagem: responde "de quando é este dado".'
+}
+
+// ──────────────────────── verificação de link ────────────────────────
+
+Table verificacao.link {
+  fonte_codigo  text        [not null]
+  identificador text        [not null]
+  valido        boolean     [not null]
+  verificado_em timestamptz [not null]
+
+  indexes {
+    (fonte_codigo, identificador) [pk]
+  }
+
+  Note: 'Fora do core: é medição nossa sobre a fonte, não dado do tribunal.'
+}
+
+// ───────────────────────── camada raw (staging) ─────────────────────────
+
+Table raw.acordao_tjdft {
+  _dlt_id      text [pk]
+  _dlt_load_id text [note: 'vira carga_id no core']
+  id           text
+  numeroAcordao text
+  ementa       text
+  decisao      text
+
+  Note: '''
+    127.563 linhas, 26 colunas. Como a API do TJDFT devolveu, sem tratamento.
+    Guardar o bruto é o que permite reprocessar sem bater na fonte de novo.
+    Só as colunas que o core consome estão desenhadas aqui.
+  '''
+}
+
+Table raw.espelho_stj {
+  _dlt_id       text [pk]
+  _dlt_load_id  text
+  numRegistro   text
+  ementa        text
+  decisao       text
+  nomeOrgaoJulgador text
+
+  Note: '877.099 linhas, 22 colunas. O mesmo para o STJ, em outro formato.'
+}
+
+// ──────────────────────────── relações ────────────────────────────
+
+Ref: core.decisao.tribunal_sigla > core.tribunal.sigla
+Ref: core.decisao.fonte_codigo > core.fonte.codigo
+Ref: core.decisao.classe_cnj > core.classe_processual.codigo_cnj
+Ref: core.decisao.carga_id > core.carga.carga_id
+Ref: core.fonte.tribunal_sigla > core.tribunal.sigla
+Ref: core.carga.fonte_codigo > core.fonte.codigo
+Ref: verificacao.link.(fonte_codigo, identificador) - core.decisao.(fonte_codigo, identificador_fonte)
+
+TableGroup raw_staging [note: 'Como a fonte devolveu'] {
+  raw.acordao_tjdft
+  raw.espelho_stj
+}
+
+TableGroup core_apresentacao [note: 'Grão único, duas fontes unificadas'] {
+  core.decisao
+  core.tribunal
+  core.fonte
+  core.classe_processual
+  core.carga
+}

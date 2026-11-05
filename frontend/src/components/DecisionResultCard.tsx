@@ -2,7 +2,8 @@ import { Fragment, type ReactNode } from 'react';
 import { Link, type To } from 'react-router-dom';
 import { ArrowRight, ArrowSquareOut } from '@phosphor-icons/react';
 
-import type { SearchDecisionMatch } from '../api/search';
+import { readThesis } from '../api/decisions';
+import type { Highlight, SearchDecisionMatch } from '../api/search';
 import {
   DELIBERATION_LABELS,
   deliberationStateOf,
@@ -24,12 +25,18 @@ type DecisionCardData = Pick<
   | 'source_url_reachable'
   | 'deliberation'
   | 'snippet'
+  | 'thesis'
 > & {
   published_on?: string | null;
 };
 
 type DecisionResultCardProps = {
   decision: DecisionCardData;
+  // Which indicator put this card here, when one did. The justification only
+  // makes sense for a classification this tool inferred: court and period are
+  // fields copied from the source, so there is nothing of the court's to
+  // point at and no claim of ours to answer for.
+  justifies?: Highlight;
   // The address of the decision in full. Without it the card only links to
   // the court.
   to?: To;
@@ -97,6 +104,7 @@ function renderSafeSnippet(value: string | null | undefined): ReactNode[] {
 
 function DecisionResultCard({
   decision,
+  justifies,
   to,
   replace,
   state,
@@ -126,6 +134,7 @@ function DecisionResultCard({
     },
   ];
   const decided = formatDate(decision.decided_on);
+  const thesis = readThesis(decision.thesis);
 
   return (
     <article
@@ -173,6 +182,43 @@ function DecisionResultCard({
         </header>
 
         <p className="decision-result-card__snippet">{renderSafeSnippet(decision.snippet)}</p>
+
+        {/* Closed by default: the thesis block runs to 441 characters on
+            average, and six of them open would stop the list being scannable.
+            It sits above the stretched link, like the official link does, so
+            opening it does not open the decision. */}
+        {justifies && (
+          <details className="decision-result-card__thesis">
+            <summary>Por que esta decisão está aqui</summary>
+            {thesis.length > 0 ? (
+              <>
+                <p className="decision-result-card__thesis-origin">Tese firmada pelo tribunal</p>
+                <ol className="decision-result-card__thesis-list">
+                  {thesis.map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
+                </ol>
+              </>
+            ) : normalizeText(decision.snippet) ? (
+              /* No thesis written, so the evidence is the snippet above —
+                 which this list cut around the dispositive or the citation,
+                 not around what was typed. */
+              <p className="decision-result-card__thesis-origin">
+                O tribunal não escreveu tese. O trecho acima é a passagem que produziu a
+                classificação.
+              </p>
+            ) : (
+              <p className="decision-result-card__thesis-origin">
+                O tribunal não escreveu tese nem dispositivo para esta decisão.
+              </p>
+            )}
+            <p className="decision-result-card__thesis-reading">
+              {justifies === 'resultado'
+                ? 'O resultado é leitura automática desta ferramenta, a partir do texto acima.'
+                : 'A aderência é leitura automática desta ferramenta, a partir do texto acima.'}
+            </p>
+          </details>
+        )}
 
         <dl className="decision-result-card__meta">
           {metadata

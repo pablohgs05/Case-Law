@@ -2,7 +2,8 @@ import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { currentAddress, renderApp } from './renderApp';
+import { currentAddress, renderApp, SIGNED_IN } from './renderApp';
+import { TEAM_PATH } from '../pages/TeamPage';
 
 // Only the address of the API is replaced: the request code under test is the
 // real one, so what is asked of the coverage endpoint is what the app sends.
@@ -160,28 +161,53 @@ afterEach(() => {
 });
 
 describe('the top bar', () => {
-  it('holds the search and the way to the coverage, and nothing else', () => {
+  it('holds the brand, the search, the two ways out and the account', () => {
+    // Lista fechada de propósito: o que entra na barra entra por decisão, e
+    // este teste é onde alguém percebe que acrescentou algo sem querer.
+
     installApi();
     renderApp();
 
     const bar = within(topBar());
-    expect(bar.getAllByRole('link')).toHaveLength(1);
+    // A marca é a volta para a pesquisa, e é por isso que não há um segundo
+    // link dizendo "Pesquisa" ao lado dela.
+    expect(bar.getByRole('link', { name: 'Jusmap — início' })).toHaveAttribute('href', '/');
+    expect(bar.getByRole('img', { name: 'Jusmap' })).toHaveAttribute('src', '/jusmap-logo.png');
+    expect(bar.getAllByRole('link').map((link) => link.textContent)).toEqual([
+      '',
+      'Cobertura da baseInformações do sistema',
+      'UsuáriosQuem tem acesso',
+    ]);
     expect(bar.getByRole('searchbox', { name: 'Pesquisar decisões' })).toBeInTheDocument();
+    // "Sair" vem primeiro porque a conta fica na linha da marca, acima da
+    // linha da busca.
     expect(bar.getAllByRole('button').map((button) => button.textContent)).toEqual([
+      'Sair',
       'Filtros',
       'Pesquisar',
     ]);
-    expect(coverageLink()).toHaveTextContent('Informações do sistema');
+    expect(bar.getByText('Ana Almeida Costa')).toBeInTheDocument();
   });
 
-  it('on the coverage, holds only the way to it: there is no search there', () => {
+  it('não oferece a equipe a quem não é gerente', () => {
+    installApi();
+    renderApp('/', [], true, { ...SIGNED_IN, role: 'usuario' });
+
+    const bar = within(topBar());
+
+    expect(bar.queryByText('Usuários')).toBeNull();
+    expect(bar.getByText('Ana Almeida Costa')).toBeInTheDocument();
+  });
+
+  it('on the coverage, keeps the brand and coverage link without a search', () => {
     installApi();
     renderApp('/cobertura');
 
     const bar = within(topBar());
-    expect(bar.getAllByRole('link')).toHaveLength(1);
+
     expect(bar.queryByRole('searchbox')).toBeNull();
-    expect(bar.queryAllByRole('button')).toHaveLength(0);
+    // Só o botão de sair: nada da busca sobra numa tela que não é dela.
+    expect(bar.getAllByRole('button').map((button) => button.textContent)).toEqual(['Sair']);
   });
 
   it('reaches the coverage from the search screen', async () => {
@@ -440,5 +466,62 @@ describe('going to the coverage and back', () => {
 
     expect(currentAddress()).toBe('/');
     expect(screen.getByLabelText('Pesquisar decisões')).toBeVisible();
+  });
+});
+
+describe('a volta para a pesquisa', () => {
+  it('da cobertura aberta pela pesquisa, volta para onde o leitor estava', async () => {
+    installApi();
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.click(coverageLink());
+    expect(currentAddress()).toBe('/cobertura');
+
+    await user.click(screen.getByRole('button', { name: /Voltar à pesquisa/ }));
+
+    expect(currentAddress()).toBe('/');
+  });
+
+  it('da cobertura aberta pela tela de usuários, volta para a pesquisa e não para ela', async () => {
+    // O defeito: a volta era um passo no histórico, e quando a tela de
+    // usuários passou a existir, "um passo atrás" deixou de ser a pesquisa.
+    // O botão dizia "voltar à pesquisa" e levava para os usuários.
+    installApi();
+    const user = userEvent.setup();
+    renderApp(TEAM_PATH);
+
+    await user.click(coverageLink());
+    expect(currentAddress()).toBe('/cobertura');
+
+    await user.click(screen.getByRole('button', { name: /Voltar à pesquisa/ }));
+
+    expect(currentAddress()).toBe('/');
+  });
+
+  it('a marca leva à pesquisa de qualquer tela', async () => {
+    // É por ela que se volta, e é por isso que não existe um segundo link
+    // dizendo "Pesquisa" ao lado: dois caminhos para a mesma sala.
+    installApi();
+    const user = userEvent.setup();
+
+    for (const partida of [TEAM_PATH, '/cobertura']) {
+      const { unmount } = renderApp(partida);
+
+      await user.click(within(topBar()).getByRole('link', { name: 'Jusmap — início' }));
+
+      expect(currentAddress()).toBe('/');
+      unmount();
+    }
+  });
+
+  it('a tela de usuários oferece a volta', async () => {
+    installApi();
+    const user = userEvent.setup();
+    renderApp(TEAM_PATH);
+
+    await user.click(screen.getByRole('button', { name: /Voltar à pesquisa/ }));
+
+    expect(currentAddress()).toBe('/');
   });
 });

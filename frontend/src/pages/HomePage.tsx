@@ -1,7 +1,13 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useMatch, useNavigate } from 'react-router-dom';
-import { MagnifyingGlass, SlidersHorizontal } from '@phosphor-icons/react';
+import {
+  CircleNotch,
+  ArrowRight,
+  FileMagnifyingGlass,
+  MagnifyingGlass,
+  SlidersHorizontal,
+} from '@phosphor-icons/react';
 import {
   DEFAULT_ORDER,
   SearchRequestError,
@@ -12,7 +18,10 @@ import DecisionDetail from '../components/DecisionDetail';
 import DecisionResultCard from '../components/DecisionResultCard';
 import ResultsPagination from '../components/ResultsPagination';
 import ResultsSort from '../components/ResultsSort';
+import ExportAction from '../components/ExportAction';
+import { exportParams } from '../api/exports';
 import CourtVolumePanel from '../components/CourtVolumePanel';
+import AdherencePanel from '../components/AdherencePanel';
 import OutcomeSharePanel from '../components/OutcomeSharePanel';
 import TimelineVolumePanel, { type TimelineState } from '../components/TimelineVolumePanel';
 import IndicatorDocumentsDrawer from '../components/IndicatorDocumentsDrawer';
@@ -26,6 +35,8 @@ import ResultsTabs from '../components/ResultsTabs';
 import { panelId, tabId, type ResultsView } from '../components/resultsView';
 import SearchFilters from '../components/SearchFilters';
 import type { OutcomeState } from '../components/outcomeFormat';
+import type { AdherenceState, MostCitedState } from '../components/precedentFormat';
+import { getAdherence, getMostCited } from '../api/precedents';
 import type { LastUpdateState, VolumeState } from '../components/volumeFormat';
 import {
   getLastUpdate,
@@ -151,6 +162,8 @@ type PanoramaCache = {
   key: string;
   volume: VolumeState;
   outcome: OutcomeState;
+  adherence: AdherenceState;
+  mostCited: MostCitedState;
   timeline: TimelineState;
 } | null;
 
@@ -171,7 +184,7 @@ function HomePage() {
   // search session, above the routes: the list can unmount and still come back
   // as it was, with no new request. Only what belongs to this one render — the
   // form element — stays local.
-  const [value, setValue] = useSessionState('value', 'prescrição intercorrente em execução fiscal');
+  const [value, setValue] = useSessionState('value', '');
   // What the panel shows while it is being edited. A change here never starts a
   // search: only Pesquisar applies it.
   const [filterDraft, setFilterDraft] = useSessionState<SearchFilterValues>(
@@ -438,10 +451,11 @@ function HomePage() {
     }
   };
 
-  const handleSubmit = (event?: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event?: React.FormEvent<HTMLFormElement>, example?: string) => {
     event?.preventDefault();
 
-    const trimmedValue = value.trim();
+    const trimmedValue = (example ?? value).trim();
+    if (example) setValue(example);
 
     if (!trimmedValue) {
       setErrorMessage('Digite uma expressão para pesquisar.');
@@ -528,6 +542,10 @@ function HomePage() {
       setPanorama((current) => (current?.key === key ? { ...current, volume } : current));
     const settleOutcome = (outcome: OutcomeState) =>
       setPanorama((current) => (current?.key === key ? { ...current, outcome } : current));
+    const settleAdherence = (adherence: AdherenceState) =>
+      setPanorama((current) => (current?.key === key ? { ...current, adherence } : current));
+    const settleMostCited = (mostCited: MostCitedState) =>
+      setPanorama((current) => (current?.key === key ? { ...current, mostCited } : current));
     const settleTimeline = (timeline: TimelineState) =>
       setPanorama((current) => (current?.key === key ? { ...current, timeline } : current));
 
@@ -536,6 +554,8 @@ function HomePage() {
       volume: { status: 'loading' },
       outcome: { status: 'loading' },
       timeline: { status: 'loading' },
+      adherence: { status: 'loading' },
+      mostCited: { status: 'loading' },
     });
     getVolumeByPeriod(volumeFor(applied)).then(
       (volume) => settleTimeline({ status: 'loaded', volume }),
@@ -551,6 +571,16 @@ function HomePage() {
     getOutcomeShare(volumeFor(applied)).then(
       (outcome) => settleOutcome({ status: 'loaded', outcome }),
       (error: unknown) => settleOutcome({ status: 'failed', message: volumeFailure(error) }),
+    );
+
+    getAdherence(volumeFor(applied)).then(
+      (adherence) => settleAdherence({ status: 'loaded', adherence }),
+      (error: unknown) => settleAdherence({ status: 'failed', message: volumeFailure(error) }),
+    );
+
+    getMostCited(volumeFor(applied), { limit: 8 }).then(
+      (precedents) => settleMostCited({ status: 'loaded', precedents }),
+      (error: unknown) => settleMostCited({ status: 'failed', message: volumeFailure(error) }),
     );
 
     // Read again with each cut, so the date shown is the one the counts were
@@ -585,6 +615,18 @@ function HomePage() {
       ? { status: 'idle' }
       : panorama?.key === cutKey
         ? panorama.outcome
+        : { status: 'loading' };
+  const adherenceState: AdherenceState =
+    cutKey === null
+      ? { status: 'idle' }
+      : panorama?.key === cutKey
+        ? panorama.adherence
+        : { status: 'loading' };
+  const mostCitedState: MostCitedState =
+    cutKey === null
+      ? { status: 'idle' }
+      : panorama?.key === cutKey
+        ? panorama.mostCited
         : { status: 'loading' };
   const lastUpdateState: LastUpdateState = lastUpdate ?? { status: 'loading' };
   const timelineState: TimelineState =
@@ -675,7 +717,7 @@ function HomePage() {
             type="search"
             value={value}
             onChange={(event) => setValue(event.target.value)}
-            placeholder="Pesquise um assunto, fundamento ou frase exata"
+            placeholder="Pesquise um assunto ou fundamento"
             autoComplete="off"
             disabled={isLoading}
           />
@@ -701,6 +743,7 @@ function HomePage() {
           </button>
 
           <button type="submit" className="search-button" disabled={isLoading || !value.trim()}>
+            {isLoading && <CircleNotch size={15} className="motion-spinner" aria-hidden="true" />}
             {isLoading ? 'Pesquisando...' : 'Pesquisar'}
           </button>
         </div>
@@ -737,7 +780,32 @@ function HomePage() {
     <main className="search-page">
       {searchSlot ? createPortal(searchForm, searchSlot) : searchForm}
 
-      <ResultsTabs value={view} onChange={setView} />
+      {!hasSearch && !chosenDecision && (
+        <section className="search-welcome" aria-labelledby="search-welcome-title">
+          <div className="search-welcome__content">
+            <span className="search-welcome__icon" aria-hidden="true">
+              <FileMagnifyingGlass size={28} />
+            </span>
+            <p className="search-welcome__eyebrow">Nenhuma pesquisa realizada</p>
+            <h1 id="search-welcome-title">Comece pela questão jurídica que deseja investigar</h1>
+            <p className="search-welcome__description">
+              Consulte decisões e explore o panorama a partir dos termos e filtros informados acima.
+            </p>
+            <button
+              type="button"
+              className="search-welcome__example"
+              onClick={() => handleSubmit(undefined, 'prescrição intercorrente em execução fiscal')}
+            >
+              <span>
+                <span className="search-welcome__example-label">Experimentar com um exemplo</span>
+                <strong>Prescrição intercorrente em execução fiscal</strong>
+              </span>
+              <ArrowRight size={20} aria-hidden="true" />
+            </button>
+          </div>
+        </section>
+      )}
+      {(hasSearch || chosenDecision) && <ResultsTabs value={view} onChange={setView} />}
       {activeTags.length > 0 && (
         <div className="filter-tags applied-filter-tags" aria-label="Filtros aplicados">
           {activeTags.map((tag) => (
@@ -757,7 +825,7 @@ function HomePage() {
 
       {/* The rest of the window. The page itself never scrolls: the list, the
           decision and the panorama each scroll inside their own box. */}
-      <div className="search-content">
+      <div className="search-content" hidden={!hasSearch && !chosenDecision}>
         {/* Always two columns, as in the reference: the list on the left, the
             decision on the right. Hidden rather than unmounted while the
             panorama is up, so the list, its page and the open decision are
@@ -785,6 +853,12 @@ function HomePage() {
                   )}
                 </h2>
                 <ResultsSort value={applied.order} onChange={changeOrder} disabled={isLoading} />
+                <ExportAction
+                  key={JSON.stringify(exportParams(requestFor(applied)))}
+                  params={exportParams(requestFor(applied))}
+                  total={totalResults}
+                  disabled={isLoading || Boolean(errorMessage)}
+                />
               </div>
             )}
 
@@ -908,6 +982,13 @@ function HomePage() {
                 onSelectPeriod={(period, granularity, count) =>
                   openIndicator({ kind: 'period', period, granularity, count })
                 }
+              />
+            }
+            precedents={
+              <AdherencePanel
+                adherence={adherenceState}
+                mostCited={mostCitedState}
+                onRetry={retryPanorama}
               />
             }
             outcomes={

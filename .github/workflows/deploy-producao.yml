@@ -96,6 +96,7 @@ jobs:
           scp -i ~/.ssh/deploy deploy/docker-compose.prod.yml "$VPS_USER@$VPS_HOST:~/$REMOTE_DIR/docker-compose.yml"
           scp -i ~/.ssh/deploy deploy/release.sh "$VPS_USER@$VPS_HOST:~/$REMOTE_DIR/release.sh"
           scp -i ~/.ssh/deploy infra/postgres/init.sql "$VPS_USER@$VPS_HOST:~/$REMOTE_DIR/init.sql"
+          scp -i ~/.ssh/deploy backend/app/identidade.sql "$VPS_USER@$VPS_HOST:~/$REMOTE_DIR/identidade.sql"
 
       - name: Authenticate the production server against the registry
         env:

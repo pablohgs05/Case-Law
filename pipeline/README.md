@@ -82,6 +82,38 @@ Field names are preserved exactly as the API returns them, camel case included,
 which is why the SQL models quote `"dataJulgamento"`. The raw layer mirrors the
 source; renaming belongs to the transformation.
 
+### Doctrine, from the BDJur
+
+```bash
+uv run python -m sources.doutrina
+```
+
+Harvests the STJ's digital library by OAI-PMH into `raw.doutrina_bdjur`: author,
+title, where it came out, and the link back. Never the text of the work — open
+access is permission to read, not to redistribute.
+
+Only `col_2011_8`, Artigos de Acesso Aberto. The library keeps Acesso Restrito
+in a separate collection, `col_2011_9`, and that separation is what settles the
+scope: the classification is the STJ's, not ours. Where a record carries
+`dc:rights` the field decides, and it is an allow list — one work filed in the
+open collection declares `Restricted access`, and it does not enter `core`.
+
+Records are written with `merge` on repository plus OAI identifier, and the
+cursor is the record's own datestamp, which is what the protocol's `from`
+compares. A second run asks the library only for what changed since the first.
+
+```bash
+uv run python -m sources.doutrina --de ~/paginas-bdjur
+```
+
+**The endpoint refuses automated access.** It answered on 05/10/2026 and has
+answered HTTP 403 since 24/10/2026, by a measure of the STJ's own security
+coordination; harvesting access has to be asked for at the address the protocol
+publishes, `bdjur@stj.jus.br`. Until it is granted, `--de` reads pages saved by
+hand from a browser — the same records, rendered rather than served. Both paths
+parse the same `oai_dc` block with the same code, and a test asserts they agree
+field by field.
+
 ## Checking the links
 
 Each decision carries a link back to the court. Whether that link still reaches
@@ -147,6 +179,7 @@ Everything comes from the environment. Nothing is hardcoded.
 | `TJDFT_SUBJECT` | TJDFT connector | none — every subject |
 | `TJDFT_MAX_PAGES` | TJDFT connector | none — until the source runs out |
 | `TJDFT_REQUEST_INTERVAL` | TJDFT connector | `0.5` seconds between requests |
+| `BDJUR_PAGINAS` | BDJur connector | none — reads the endpoint, same as `--de` |
 | `VERIFY_MAX` | link check | `1000` records per run |
 | `VERIFY_INTERVAL` | link check | `0.5` seconds between requests |
 
@@ -164,46 +197,6 @@ pipeline/
     ├── seeds/           what each court is: URL patterns, coverage, status
     └── models/          SQL models
 ```
-
-## Adding a court
-
-The link back to the official document is not returned by the court API — it is
-built. `core.decisao` assembles it by substituting the record's identifier into a
-template that lives in `seeds/fonte.csv`, one row per source:
-
-```csv
-codigo,nome,tribunal_sigla,url_base,url_documento_template,...
-tjdft-jurisdf,TJDFT JurisDF,TJDFT,https://jurisdf.tjdft.jus.br,https://jurisdf.tjdft.jus.br/detalhes/{identificador},...
-```
-
-`{identificador}` is the only placeholder. Everything that varies per court —
-the pattern, the sigla, the coverage window — is read from this row, so a change
-of URL pattern is a change to the CSV and not to any query.
-
-Four steps, in this order:
-
-1. **Write the connector** in `sources/`, following `tjdft.py`. It lands its own
-   table under `raw.`, named after the court.
-2. **Add the row** to `seeds/fonte.csv`. The `codigo` is what ties the three
-   pieces together, so pick it before writing SQL.
-3. **Write the model.** Copy `models/core_decisao.sql`, point it at the new raw
-   table, and set the `fonte_codigo` literal in the `bruto` CTE to the `codigo`
-   from step 2. That literal is the only place the source is named; the sigla and
-   the URL come from the seed through the join.
-4. **Union the sources.** `core.decisao` reads one raw table today. A second
-   court means turning the `bruto` CTE into a `UNION ALL` of both, or splitting
-   per-court models and unioning them in `core.decisao`.
-
-Step 4 is the one with real work in it. Steps 1 to 3 are mechanical.
-
-A court whose API does not give a stable per-document identifier cannot have a
-link built this way. `url_fonte` is under a `not_null` audit, so the build fails
-rather than publishing rows whose links go nowhere.
-
-## What is not committed
-
-Credentials (`.dlt/secrets.toml`, `.env`), the loaded data, and the caches and
-logs both tools write while running.
 
 ## Publishing to the servers
 

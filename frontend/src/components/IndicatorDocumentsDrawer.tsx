@@ -212,7 +212,7 @@ export default function IndicatorDocumentsDrawer({
               }}
             />
           ) : (
-            <>
+            <div className="indicator-drawer__list-view">
               <div className="indicator-drawer__total">
                 <strong>{total}</strong>
                 <span>
@@ -256,6 +256,7 @@ export default function IndicatorDocumentsDrawer({
                       <li key={`${decision.source}/${decision.identifier}`}>
                         <DecisionResultCard
                           decision={decision}
+                          justifies={params?.highlight}
                           onSelect={() => {
                             setChosen(decision);
                             title.current?.focus();
@@ -276,7 +277,7 @@ export default function IndicatorDocumentsDrawer({
                   onGo={go}
                 />
               )}
-            </>
+            </div>
           )}
         </div>
       </div>

@@ -25,6 +25,7 @@ services:
       - pgdata:/var/lib/postgresql/data
       # Creates the extensions on first start.
       - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/01-extensions.sql:ro
+      - ./backend/app/identidade.sql:/docker-entrypoint-initdb.d/02-identidade.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-caselaw}"]
       interval: 5s

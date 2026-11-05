@@ -9,8 +9,13 @@ from psycopg.rows import DictRow, dict_row
 
 from app.db import get_connection
 from app.main import app
+from app.sessions import gate
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+# The accounts schema the server applies, not a copy of it: a second
+# definition here would drift from the real one without a test noticing.
+IDENTITY = Path(__file__).resolve().parents[1] / "app" / "identidade.sql"
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "")
 
@@ -18,6 +23,21 @@ needs_database = pytest.mark.skipif(
     not TEST_DATABASE_URL,
     reason="set TEST_DATABASE_URL to run the tests that talk to PostgreSQL",
 )
+
+
+@pytest.fixture(autouse=True)
+def signed_in_for_the_suite() -> Iterator[None]:
+    """
+    Every suite runs as somebody.
+
+    The tool refuses anyone without an account, so without this each of the
+    four hundred tests about searching would be a test about the login screen.
+    They are about the search, so the door is propped open for them and tested
+    where it belongs — `test_contas.py`, which takes the prop away first.
+    """
+    app.dependency_overrides[gate] = lambda: None
+    yield
+    app.dependency_overrides.pop(gate, None)
 
 
 @pytest.fixture(scope="session")
@@ -32,6 +52,7 @@ def prepared_database() -> Iterator[str]:
     with psycopg.connect(TEST_DATABASE_URL, autocommit=True) as conn:
         for name in ("schema.sql", "decisions.sql"):
             conn.execute((FIXTURES / name).read_text(encoding="utf-8"))
+        conn.execute(IDENTITY.read_text(encoding="utf-8"))
     yield TEST_DATABASE_URL
 
 

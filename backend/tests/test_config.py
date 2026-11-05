@@ -34,3 +34,10 @@ def test_environment_is_read_from_the_environment(
     monkeypatch.setenv("ENVIRONMENT", "production")
 
     assert Settings().environment == "production"
+
+
+def test_legacy_export_limit_does_not_restrict_exports(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("EXPORT_MAX_DECISIONS", "1000")
+    assert "export_max_decisions" not in Settings.model_fields

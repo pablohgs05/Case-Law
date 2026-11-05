@@ -12,6 +12,7 @@ from app.api import (
     filters,
     health,
     indicators,
+    reports,
     session,
     users,
 )
@@ -33,6 +34,13 @@ TAGS = [
         "description": (
             "Legal scholarship that treats what a decision settled. "
             "Enrichment: a decision opens whether this answers or not."
+        ),
+    },
+    {
+        "name": "quality",
+        "description": (
+            "Readers reporting a classification they believe is wrong. A "
+            "report is recorded for review and never changes what is published."
         ),
     },
     {
@@ -92,5 +100,6 @@ app.include_router(filters.router)
 app.include_router(indicators.router)
 app.include_router(exports.router)
 app.include_router(doctrine.router)
+app.include_router(reports.router)
 app.include_router(session.router)
 app.include_router(users.router)

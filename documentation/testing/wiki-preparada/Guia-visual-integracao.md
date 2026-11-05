@@ -75,10 +75,10 @@ flowchart TD
 | :--- | :--- |
 | 🟦 Backend — API + PostgreSQL | [`test_one_court_returns_only_its_decisions`](https://github.com/pablohgs05/Case-Law/blob/dev/backend/tests/test_search_filters.py): a chamada usa `TestClient` e conexão PostgreSQL real de teste, com dados controlados; valida tribunal STJ, total e identificadores |
 | 🟩 Frontend — tela + busca/paginação | [`resultsPagination.test.tsx`](https://github.com/pablohgs05/Case-Law/blob/dev/frontend/src/tests/resultsPagination.test.tsx): 45 resultados simulados → 6 cartões e `Exibindo 1–6 de 45 resultados` |
-| ✅ CI recente da contribuição de sincronização | [Execução de 05/11/2026 — PR #8](https://github.com/pablohgs05/Case-Law/actions/runs/42038759505), backend e frontend aprovados |
-| 🔁 Execução na `dev` após merge | [CI do merge de 05/11/2026](https://github.com/pablohgs05/Case-Law/actions/runs/42039148107); verificar estado mais recente no GitHub antes de apresentar |
+| ✅ CI de sincronização | [PR #8 — 05/11/2026](https://github.com/pablohgs05/Case-Law/actions/runs/42038759505), backend e frontend aprovados |
+| ✅ Execução na `dev` após merge | [CI de 05/11/2026 aprovado](https://github.com/pablohgs05/Case-Law/actions/runs/42039148107): **757 testes backend e 386 frontend aprovados** |
 
-Os resultados da suíte completa **não** são quantidades de testes de integração. O PostgreSQL utilizado no CI é `caselaw_test` e **não** o banco de produção. A API simulada do frontend permite testar a integração de módulos de interface, mas **não** prova comunicação ponta a ponta com o backend.
+**757 e 386 são totais das suítes, não contagens exclusivas de testes de integração.** O PostgreSQL utilizado no CI é `caselaw_test` e **não** o banco de produção. A API simulada do frontend permite testar a integração de módulos de interface, mas **não** prova comunicação ponta a ponta com o backend.
 
 ## ⑤ Fala pronta — aproximadamente 50 segundos 🎤
 

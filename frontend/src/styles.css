@@ -1155,6 +1155,98 @@ input:focus-visible {
   margin-bottom: 0;
 }
 
+/* Reporting a reading of the tool, inside the block that owns it. */
+.classification-report {
+  margin-top: 0.6rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #e4d8d6;
+}
+
+.classification-report__open,
+.classification-report__cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #6b5b5e;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.classification-report__open:hover,
+.classification-report__open:focus-visible,
+.classification-report__cancel:hover,
+.classification-report__cancel:focus-visible {
+  color: #45151f;
+}
+
+.classification-report__form {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.classification-report__field {
+  font-weight: 600;
+  color: #45151f;
+}
+
+.classification-report__form select,
+.classification-report__form textarea {
+  width: 100%;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid #d8cbc9;
+  border-radius: 4px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+
+.classification-report__form textarea {
+  resize: vertical;
+}
+
+.classification-report__hint {
+  color: #8a7579;
+}
+
+.classification-report__failure {
+  margin: 0;
+  color: #9b1c1c;
+}
+
+.classification-report__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 0.2rem;
+}
+
+.classification-report__send {
+  padding: 0.3rem 0.8rem;
+  border: 0;
+  border-radius: 4px;
+  background: #45151f;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.classification-report__send:disabled,
+.classification-report__cancel:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.classification-report__receipt {
+  margin: 0;
+  color: #1f5f3a;
+  font-weight: 600;
+}
+
 .decision-result-card__arrow {
   grid-column: 3;
   grid-row: 1;
@@ -4259,6 +4351,15 @@ input:focus-visible {
   color: var(--search-muted);
   font:
     400 var(--text-xs)/1.4 'Source Sans 3',
+    sans-serif;
+}
+
+.reports__description {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font:
+    400 var(--text-sm)/1.5 'Source Sans 3',
     sans-serif;
 }
 

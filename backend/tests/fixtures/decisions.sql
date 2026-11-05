@@ -66,3 +66,36 @@ VALUES (
     FALSE, TRUE, 'https://jurisdf.tjdft.jus.br/detalhes/1000005', TRUE,
     TO_TSVECTOR('portugues_sem_acento', 'ALIENAÇÃO FIDUCIÁRIA. Busca e apreensão. Alienação fiduciária em garantia. Mora comprovada. Apelação provida.')
 );
+
+-- Built by the same statements as `core_termo_frequente.sql` and
+-- `core_busca_ampla.sql`, with the floor lowered from 16.000 decisions to 2.
+-- Five decisions cannot reach the real floor, and hard-coding rows here would
+-- make the equivalence test compare the pipeline against a hand-written answer
+-- instead of against itself.
+INSERT INTO core.termo_frequente (lexema, decisoes, carregado_em)
+SELECT l.lexema::TEXT, COUNT(*)::BIGINT, MAX(NOW())
+FROM core.decisao AS d
+CROSS JOIN LATERAL UNNEST(TSVECTOR_TO_ARRAY(d.ementa_busca)) AS l(lexema)
+GROUP BY l.lexema
+HAVING COUNT(*) >= 2
+   AND NUMNODE(TO_TSQUERY('simple', QUOTE_LITERAL(l.lexema))) = 1;
+
+INSERT INTO core.busca_ampla (lexema, posicao, rank, data_referencia, fonte_codigo, identificador_fonte)
+SELECT t.lexema, r.posicao::INTEGER, r.rank::REAL, r.data_referencia, r.fonte_codigo, r.identificador_fonte
+FROM core.termo_frequente AS t
+CROSS JOIN LATERAL (
+  SELECT
+    ROW_NUMBER() OVER (
+      ORDER BY
+        TS_RANK(d.ementa_busca, QUOTE_LITERAL(t.lexema)::TSQUERY) DESC,
+        d.data_referencia DESC, d.fonte_codigo DESC, d.identificador_fonte DESC
+    ) AS posicao,
+    TS_RANK(d.ementa_busca, QUOTE_LITERAL(t.lexema)::TSQUERY) AS rank,
+    d.data_referencia, d.fonte_codigo, d.identificador_fonte
+  FROM core.decisao AS d
+  WHERE d.ementa_busca @@ QUOTE_LITERAL(t.lexema)::TSQUERY
+  ORDER BY
+    TS_RANK(d.ementa_busca, QUOTE_LITERAL(t.lexema)::TSQUERY) DESC,
+    d.data_referencia DESC, d.fonte_codigo DESC, d.identificador_fonte DESC
+  LIMIT 1000
+) AS r;

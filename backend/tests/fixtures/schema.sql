@@ -38,6 +38,27 @@ CREATE TABLE core.decisao (
 CREATE UNIQUE INDEX ON core.decisao (fonte_codigo, identificador_fonte);
 CREATE INDEX ON core.decisao USING gin (ementa_busca);
 
+CREATE TABLE core.termo_frequente (
+    lexema       TEXT   NOT NULL,
+    decisoes     BIGINT NOT NULL,
+    carregado_em TIMESTAMPTZ,
+    PRIMARY KEY (lexema)
+);
+
+CREATE TABLE core.busca_ampla (
+    lexema              TEXT    NOT NULL,
+    posicao             INTEGER NOT NULL,
+    rank                REAL    NOT NULL,
+    data_referencia     DATE    NOT NULL,
+    fonte_codigo        TEXT    NOT NULL,
+    identificador_fonte TEXT    NOT NULL,
+    PRIMARY KEY (lexema, fonte_codigo, identificador_fonte)
+);
+-- The index is the feature, so the fixture carries it too: a test that asks
+-- the planner how it answered has nothing to see without it.
+CREATE INDEX ON core.busca_ampla
+    (lexema, rank DESC, data_referencia DESC, fonte_codigo DESC, identificador_fonte DESC);
+
 CREATE TABLE core.fonte (
     codigo                 TEXT NOT NULL,
     nome                   TEXT NOT NULL,

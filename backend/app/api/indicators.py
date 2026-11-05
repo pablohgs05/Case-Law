@@ -1119,3 +1119,255 @@ def read_most_cited(
         )
         for row in rows
     ]
+
+
+# One scan, two groupings: GROUPING SETS answers the judging bodies and the
+# reporting judges from the same matched rows, so the two cannot describe
+# different cuts. The value is kept exactly as the source wrote it — that is
+# what the search's own filter compares against, so a group opens onto exactly
+# its decisions. Only a missing or blank value is folded, into NULL.
+CONCENTRATION_SQL = f"""
+SELECT
+    GROUPING(s.orgao) AS por_relator,
+    s.orgao           AS orgao,
+    s.relator         AS relator,
+    COUNT(*)          AS decisoes
+FROM (
+    SELECT
+        CASE WHEN BTRIM(d.orgao_julgador) <> '' THEN d.orgao_julgador END AS orgao,
+        CASE WHEN BTRIM(d.relator) <> '' THEN d.relator END               AS relator
+    FROM core.decisao AS d
+    WHERE {MATCH}{{filters}}
+) AS s
+GROUP BY GROUPING SETS ((s.orgao), (s.relator))
+"""
+
+DEFAULT_CONCENTRATION_LIMIT = 5
+
+
+class ConcentrationGroup(BaseModel):
+    name: str = Field(
+        description=(
+            "The value exactly as the source wrote it, never normalised. It is "
+            "the value the search's `orgao_julgador` or `relator` filter takes, "
+            "so passing it back opens exactly these decisions."
+        ),
+        examples=["CORTE ESPECIAL"],
+    )
+    decisions: int = Field(description="Decisions of the cut in this group.")
+    share: float = Field(
+        description="Percentage of `total`, to one decimal.", examples=[31.4]
+    )
+
+
+class ConcentrationOther(BaseModel):
+    groups: int = Field(
+        description=(
+            "How many named groups were folded in here, beyond the ranked ones."
+        ),
+        examples=[37],
+    )
+    decisions: int = Field(
+        description=(
+            "Every decision of the cut outside the ranked groups, `missing` "
+            "included. Opened by sending the ranked names as "
+            "`orgao_julgador_excluido` or `relator_excluido` to `/decisions`."
+        ),
+        examples=[412],
+    )
+    share: float = Field(description="Percentage of `total`, to one decimal.")
+
+
+class ConcentrationDimension(BaseModel):
+    groups: list[ConcentrationGroup] = Field(
+        description=(
+            "The largest groups, at most `limit`, largest first; ties by name. "
+            "Empty when the search matches nothing."
+        )
+    )
+    other: ConcentrationOther | None = Field(
+        description=(
+            "Everything beyond the ranked groups as one, so the slices add up "
+            "to `total`. `null` when nothing is left over."
+        )
+    )
+    missing: int = Field(
+        description=(
+            "Decisions with no value recorded for this field. Never a group of "
+            "their own and never dropped: they are counted inside `other`."
+        ),
+        examples=[0],
+    )
+
+
+class Concentration(BaseModel):
+    total: int = Field(
+        description=(
+            "Every decision the same search matches. Each dimension's groups "
+            "plus its `other` add up to it."
+        ),
+        examples=[1788],
+    )
+    limit: int = Field(
+        description="How many groups are ranked before the rest is folded.",
+        examples=[DEFAULT_CONCENTRATION_LIMIT],
+    )
+    judging_bodies: ConcentrationDimension
+    reporting_judges: ConcentrationDimension
+
+
+def _share(part: int, whole: int) -> float:
+    return round(part / whole * 100, 1) if whole else 0.0
+
+
+def _concentrate(
+    counted: dict[str | None, int], total: int, limit: int
+) -> ConcentrationDimension:
+    """
+    Rank the named groups and fold the rest, missing values included.
+
+    The order is fixed — count, then the name — so the same cut ranks the same
+    way twice, and the "other" slice, which is defined by what is above it,
+    always opens onto the same decisions.
+    """
+    named = sorted(
+        ((name, count) for name, count in counted.items() if name is not None),
+        key=lambda item: (-item[1], item[0]),
+    )
+    missing = counted.get(None, 0)
+    ranked = named[:limit]
+    rest = named[limit:]
+    rest_decisions = sum(count for _, count in rest) + missing
+
+    return ConcentrationDimension(
+        groups=[
+            ConcentrationGroup(name=name, decisions=count, share=_share(count, total))
+            for name, count in ranked
+        ],
+        other=ConcentrationOther(
+            groups=len(rest),
+            decisions=rest_decisions,
+            share=_share(rest_decisions, total),
+        )
+        if rest_decisions
+        else None,
+        missing=missing,
+    )
+
+
+@router.get(
+    "/indicators/concentration",
+    summary="Which judging bodies and reporting judges decide the search's cut",
+    responses=SEARCH_RESPONSES,
+)
+def read_concentration(
+    connection: Annotated[Connection[DictRow], Depends(get_connection)],
+    q: Annotated[
+        str,
+        Query(
+            min_length=2,
+            description="The same expression the search takes.",
+            examples=["dano moral"],
+        ),
+    ],
+    tribunal: Annotated[
+        list[str] | None,
+        Query(description="The same court filter the search takes."),
+    ] = None,
+    orgao_julgador: Annotated[
+        list[str] | None,
+        Query(
+            description="The same repeatable judging-body filter the search takes.",
+            examples=[["CORTE ESPECIAL"]],
+        ),
+    ] = None,
+    relator: Annotated[
+        list[str] | None,
+        Query(
+            description="The same repeatable reporting-judge filter the search takes.",
+            examples=[["ANA CANTARINO"]],
+        ),
+    ] = None,
+    classe_cnj: Annotated[
+        list[int] | None,
+        Query(
+            description="The same repeatable CNJ class filter the search takes.",
+            examples=[[198], [198, 213]],
+        ),
+    ] = None,
+    resultado: Annotated[
+        list[str] | None,
+        Query(
+            description=(
+                "Exact outcome values recorded by `/indicators/outcome-share`: "
+                "`negado`, `provido`, or `parcialmente_provido`. Repeat for OR "
+                "within this field; other filters combine using AND. Blank and "
+                "repeated values are ignored. Decisions without an outcome do "
+                "not match; unknown values return no matches."
+            ),
+            examples=[["negado"], ["provido", "parcialmente_provido"]],
+        ),
+    ] = None,
+    date_from: Annotated[date | None, Query(description="Judged on or after.")] = None,
+    date_to: Annotated[date | None, Query(description="Judged on or before.")] = None,
+    published_from: Annotated[
+        date | None, Query(description="Published on or after.")
+    ] = None,
+    published_to: Annotated[
+        date | None, Query(description="Published on or before.")
+    ] = None,
+    limit: Annotated[
+        int,
+        Query(
+            ge=1,
+            le=20,
+            description=(
+                "How many groups to rank in each dimension. The rest is answered "
+                "as one `other` group, with its count."
+            ),
+        ),
+    ] = DEFAULT_CONCENTRATION_LIMIT,
+) -> Concentration:
+    """
+    The same decisions the search would return, counted by judging body and by
+    reporting judge.
+
+    It narrows from the builder the search uses, so the counts and the list
+    cannot describe different sets. Names travel exactly as the source wrote
+    them: two spellings of one judge are two groups here, as they are two
+    options in the search's filter, and merging them would open onto decisions
+    the filter would not return.
+
+    Past `limit`, the groups are folded into one `other`, which also holds the
+    decisions with no value recorded. Every dimension's slices therefore add up
+    to `total`. A search that matches nothing answers zero and empty lists.
+    """
+    filters, parameters = _narrowing(
+        q,
+        tribunal,
+        date_from,
+        date_to,
+        published_from,
+        published_to,
+        orgao_julgador,
+        relator,
+        classe_cnj,
+        resultado,
+    )
+
+    with connection.cursor() as cursor:
+        cursor.execute(CONCENTRATION_SQL.format(filters=filters), parameters)
+        rows = cursor.fetchall()
+
+    bodies = {row["orgao"]: row["decisoes"] for row in rows if row["por_relator"] == 0}
+    judges = {
+        row["relator"]: row["decisoes"] for row in rows if row["por_relator"] == 1
+    }
+    total = sum(bodies.values())
+
+    return Concentration(
+        total=total,
+        limit=limit,
+        judging_bodies=_concentrate(bodies, total, limit),
+        reporting_judges=_concentrate(judges, total, limit),
+    )

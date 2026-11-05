@@ -121,6 +121,8 @@ def _filters_sql(
     reporting_judges: list[str] | None = None,
     procedural_classes: list[int] | None = None,
     outcomes: list[str] | None = None,
+    excluded_judging_bodies: list[str] | None = None,
+    excluded_reporting_judges: list[str] | None = None,
 ) -> str:
     """
     The optional narrowing, appended to the text match. The count and the page
@@ -142,6 +144,16 @@ def _filters_sql(
         clauses.append("classe_cnj = ANY(%(classe_cnj)s)")
     if outcomes:
         clauses.append("resultado = ANY(%(resultado)s)")
+    # A decision with no value recorded is outside every named group, so it
+    # stays: the concentration's "other" slice counts it, and this is the
+    # filter that opens that slice.
+    if excluded_judging_bodies:
+        clauses.append(
+            "(orgao_julgador IS NULL"
+            " OR orgao_julgador <> ALL(%(orgao_julgador_excluido)s))"
+        )
+    if excluded_reporting_judges:
+        clauses.append("(relator IS NULL OR relator <> ALL(%(relator_excluido)s))")
     if date_from is not None:
         clauses.append("data_referencia >= %(date_from)s")
     if date_to is not None:
@@ -176,6 +188,8 @@ def _narrowing(
     relator: list[str] | None = None,
     classe_cnj: list[int] | None = None,
     resultado: list[str] | None = None,
+    orgao_julgador_excluido: list[str] | None = None,
+    relator_excluido: list[str] | None = None,
 ) -> Narrowing:
     """
     Read the narrowing once, so nothing can describe a different set.
@@ -199,6 +213,8 @@ def _narrowing(
     )
     orgaos = _nonblank_unique_text(orgao_julgador)
     relatores = _nonblank_unique_text(relator)
+    excluded_bodies = _nonblank_unique_text(orgao_julgador_excluido)
+    excluded_judges = _nonblank_unique_text(relator_excluido)
     classes = list(dict.fromkeys(classe_cnj or []))
     outcomes = list(
         dict.fromkeys(value.strip() for value in resultado or [] if value.strip())
@@ -215,6 +231,10 @@ def _narrowing(
         parameters["classe_cnj"] = classes
     if outcomes:
         parameters["resultado"] = outcomes
+    if excluded_bodies:
+        parameters["orgao_julgador_excluido"] = excluded_bodies
+    if excluded_judges:
+        parameters["relator_excluido"] = excluded_judges
     if date_from is not None:
         parameters["date_from"] = date_from
     if date_to is not None:
@@ -235,6 +255,8 @@ def _narrowing(
             relatores,
             classes,
             outcomes,
+            excluded_bodies,
+            excluded_judges,
         ),
         parameters,
     )
@@ -1023,6 +1045,29 @@ def search_decisions(
             examples=[["FABRÍCIO FONTOURA BEZERRA"]],
         ),
     ] = None,
+    orgao_julgador_excluido: Annotated[
+        list[str] | None,
+        Query(
+            description=(
+                "Judging bodies to leave out, compared exactly. Decisions with "
+                "no judging body recorded are kept. This is how the `other` "
+                "group of `/indicators/concentration` is opened: the cut minus "
+                "the groups ranked above it."
+            ),
+            examples=[["1ª TURMA CÍVEL", "CÂMARA CRIMINAL"]],
+        ),
+    ] = None,
+    relator_excluido: Annotated[
+        list[str] | None,
+        Query(
+            description=(
+                "Reporting judges to leave out, compared exactly. Decisions with "
+                "no reporting judge recorded are kept. Opens the `other` group "
+                "of `/indicators/concentration`."
+            ),
+            examples=[["ANA CANTARINO"]],
+        ),
+    ] = None,
     classe_cnj: Annotated[
         list[int] | None,
         Query(
@@ -1214,6 +1259,8 @@ def search_decisions(
         relator,
         classe_cnj,
         resultado,
+        orgao_julgador_excluido,
+        relator_excluido,
     )
     parameters: dict[str, Any] = {
         **narrowed,

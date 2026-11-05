@@ -60,7 +60,7 @@ flowchart LR
 
 - [PR #3 — sandbox, não integrar](https://github.com/pablohgs05/Case-Law/pull/3): defeito no commit `ed77944`, correção em `a65f469`, testes mantidos.
 - [PR #2 — contribuição unitária integrada à `dev`](https://github.com/pablohgs05/Case-Law/pull/2): código, critérios e evidências em PR, CI concluído e merge registrado.
-- [CI da `dev` após atualização de 05/11/2026](https://github.com/pablohgs05/Case-Law/actions/runs/42039148107): verificar o status atualizado antes de apresentar.
+- [CI da `dev` em 05/11/2026](https://github.com/pablohgs05/Case-Law/actions/runs/42039148107): **sucesso**, com **757 testes backend e 386 frontend** nas suítes completas (não são apenas os casos unitários focais).
 
 As quatro falhas foram **provocadas no sandbox** para demonstrar que os testes detectam a quebra de regra. Não são uma aprovação ou devolução feita por outro desenvolvedor.
 
